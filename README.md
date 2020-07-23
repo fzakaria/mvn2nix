@@ -4,7 +4,7 @@ In the same spirit of [bundix](https://github.com/nix-community/bundix), **mvn2n
 *transitive closure* of all dependencies required by the application.
 
 ```bash
-nix-shell -p mvn2nix --run 'mvn2nix 1> dependenciex.nix'
+nix-shell -p mvn2nix --run 'mvn2nix 1> dependencies.nix'
 
 
 head dependencies.nix
