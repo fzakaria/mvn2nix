@@ -13,11 +13,15 @@ let
     '';
     # keep only *.{pom,jar,sha1,nbm} and delete all ephemeral files with lastModified timestamps inside
     installPhase = ''
-        find $out/.m2 -type f -regex '.+\\(\\.lastUpdated\\|resolver-status\\.properties\\|_remote\\.repositories\\)' -delete
+      find $out/.m2 -type f \
+        -name \*.lastUpdated -or \
+        -name resolver-status.properties -or \
+        -name _remote.repositories \
+        -delete
     '';
     outputHashAlgo = "sha256";
     outputHashMode = "recursive";
-    outputHash = "026wmcpbdvkm7xizxgg0c12z4sl88n2h7bdwvvk6r7y5b6q18nsf";
+    outputHash = "1ax9hlbsrmjf1h327rs5vklx2c310h6clhd56pvyb79pc0k6ya7h";
   };
 in mkDerivation rec {
   pname = "mvn2nix";
