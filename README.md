@@ -4,10 +4,10 @@ In the same spirit of [bundix](https://github.com/nix-community/bundix), **mvn2n
 *transitive closure* of all dependencies required by the application.
 
 ```bash
-nix-shell -p mvn2nix --run 'mvn2nix 1> dependencies.nix'
+nix run -f https://github.com/fzakaria/mvn2nix/archive/master.tar.gz --command mvn2nix 1> dependencies.nix'
 
 
-head dependencies.nix
+$ head dependencies.nix
 {
 	"org.slf4j:slf4j-api:jar:1.7.30" = {
 		url = "https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar";
@@ -29,5 +29,5 @@ If you are running *mvn2nix* from this repository, you can do so with **nix-buil
 ```bash
 nix-build
 
-./result/bin/mvn2nix 1> dependencies.nix     
+./result/bin/mvn2nix 1> dependencies.nix
 ```

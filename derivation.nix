@@ -1,11 +1,11 @@
-{ stdenv, jdk11_headless, maven, makeWrapper }:
+{ lib, stdenv, jdk11_headless, maven, makeWrapper }:
 with stdenv;
 let
   version = "0.1";
   dependencies = mkDerivation {
     name = "mvn2nix-${version}-dependencies";
     buildInputs = [ jdk11_headless maven ];
-    src = ./.;
+    src = lib.cleanSource ./.;
     buildPhase = ''
       while mvn package -Dmaven.repo.local=$out/.m2 -Dmaven.wagon.rto=5000; [ $? = 1 ]; do
         echo "timeout, restart maven to continue downloading"
@@ -27,7 +27,7 @@ in mkDerivation rec {
   pname = "mvn2nix";
   inherit version;
   name = "${pname}-${version}";
-  src = ./.;
+  src = lib.cleanSource ./.;
   buildInputs = [ jdk11_headless maven makeWrapper ];
   buildPhase = ''
     # 'maven.repo.local' must be writable so copy it out of nix store
