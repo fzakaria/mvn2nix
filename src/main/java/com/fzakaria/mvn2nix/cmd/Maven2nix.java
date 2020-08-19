@@ -1,5 +1,8 @@
 package com.fzakaria.mvn2nix.cmd;
 
+import com.fzakaria.mvn2nix.model.MavenArtifact;
+import com.fzakaria.mvn2nix.model.MavenNixInformation;
+import com.fzakaria.mvn2nix.model.PrettyPrintNixVisitor;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
 import com.google.common.io.ByteStreams;
@@ -23,7 +26,6 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -38,13 +40,6 @@ public class Maven2nix implements Callable<Integer> {
 
     @Parameters(index = "0", paramLabel = "FILE", description = "The pom file to traverse.", defaultValue = "pom.xml")
     private File file;
-
-    private static final String NIX_ATTR_TEMPLATE = "  \"%s\" = {\n" +
-            "    url = \"%s\";\n" +
-            "    layout = \"%s\";\n" +
-            "    sha256 = \"%s\";\n" +
-            "    scope = \"%s\";\n" +
-            "  };";
 
     @Override
     public Integer call() throws Exception {
@@ -74,10 +69,7 @@ public class Maven2nix implements Callable<Integer> {
         MavenWorkingSessionImpl session = (MavenWorkingSessionImpl) ((MavenWorkingSessionContainer) resolver).getMavenWorkingSession();
         final List<RemoteRepository> repositories = getRemoteRepositories(session);
 
-        /*
-         * The start of our nix attribute set
-         */
-        System.out.println("{");
+        final MavenNixInformation information = new MavenNixInformation();
 
         /*
          * Go through every artifact
@@ -103,13 +95,11 @@ public class Maven2nix implements Callable<Integer> {
 
             LOGGER.info("Resolved {} - {} - {}", canonical, url, sha256);
 
-            System.out.println(String.format(NIX_ATTR_TEMPLATE, canonical, url, layout, sha256, scope));
+            information.addDependency(canonical, new MavenArtifact(url, layout, sha256, scope) );
         }
 
-        /*
-         * The end of our nix attribute set
-         */
-        System.out.println("}");
+        PrettyPrintNixVisitor visitor = new PrettyPrintNixVisitor(System.out);
+        information.accept(visitor);
 
         return 0;
     }
