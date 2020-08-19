@@ -34,7 +34,35 @@ Now that you have a **nix** dependencies file; we can re-construct a Maven repos
 let pkgs = import <nixpkgs> {}
     buildMavenRepsitory = import (
         fetchTarball https://github.com/fzakaria/mvn2nix/archive/master.tar.gz
-        ).buildMavenRepsitory
+        ).buildMavenRepsitory;
+in
+buildMavenRepsitory {}
+```
+
+This creates a **/nix/store** path which is a Maven repository that can be used, such as in `mvn package --offline -Dmaven.repo.local=${mavenRepository}`
+
+```bash
+$ tree /nix/store/2ps43297g5nii2k15kfy8z46fam51d8x-buildMavenRepsitory | head
+
+/nix/store/2ps43297g5nii2k15kfy8z46fam51d8x-buildMavenRepsitory
+├── com
+│   └── google
+│       ├── code
+│       │   └── findbugs
+│       │       └── jsr305
+│       │           └── 3.0.2
+│       │               └── jsr305-3.0.2.jar -> /nix/store/w20lb1dk730v77qis8l6sjqpljwkyql7-jsr305-3.0.2.jar
+│       ├── errorprone
+│       │   └── error_prone_annotations
+```
+
+### Sample Derivation
+
+```nix
+let pkgs = import <nixpkgs> {}
+    buildMavenRepsitory = import (
+        fetchTarball https://github.com/fzakaria/mvn2nix/archive/master.tar.gz
+        ).buildMavenRepsitory;
     mavenRepository = buildMavenRepsitory {};
 in:
 with pkgs;
@@ -75,7 +103,12 @@ in mkDerivation rec {
 If you are running *mvn2nix* from this repository, you can do so with **nix-build**
 
 ```bash
-nix-build
+$ nix-build
 
 ./result/bin/mvn2nix 1> dependencies.nix
+```
+
+If you want to test **buildMavenRepository** you can run:
+```bash
+$ nix-build -A buildMavenRepsitory
 ```
