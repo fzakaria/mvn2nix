@@ -5,5 +5,5 @@
 {
 	mvn2nix = pkgs.mvn2nix;
 
-	buildMavenRepsitory = pkgs.buildMavenRepsitory;
+	buildMavenRepository = pkgs.buildMavenRepository;
 }

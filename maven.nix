@@ -6,7 +6,7 @@ with lib;
 # ex.
 # 	mvn package --offline -Dmaven.repo.local=${dependencies}
 {
-	name ? "buildMavenRepsitory",
+	name ? "buildMavenRepository",
 	dependencies ? import ./dependencies.nix,
 }:
 let dependencies_as_drv = (forEach (attrValues dependencies) (dependency:
