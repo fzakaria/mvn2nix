@@ -60,13 +60,12 @@ $ tree /nix/store/2ps43297g5nii2k15kfy8z46fam51d8x-buildMavenRepository | head
   let buildMavenRepository = import (
       fetchTarball https://github.com/fzakaria/mvn2nix/archive/master.tar.gz
     ).buildMavenRepository;
-  mavenRepository = buildMavenRepository { dependencies: import ./dependencies.nix };
+  mavenRepository = buildMavenRepository { dependencies = import ./dependencies.nix };
 inherit (pkgs) lib stdenv;
 inherit (stdenv) mkDerivation;
-in:
 in mkDerivation rec {
   pname = "my-dummy-derivation";
-  version = "0.01"
+  version = "0.01";
   name = "${pname}-${version}";
   src = lib.cleanSource ./.;
 
