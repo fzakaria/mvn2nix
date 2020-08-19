@@ -57,11 +57,13 @@ $ tree /nix/store/2ps43297g5nii2k15kfy8z46fam51d8x-buildMavenRepository | head
 
 ```nix
 { pkgs ? import <nixpkgs> {} }:
-  let buildMavenRepository = import (
-      fetchTarball https://github.com/fzakaria/mvn2nix/archive/master.tar.gz
-    ).buildMavenRepository;
+let
+  mvn2nix = import
+    (fetchTarball "https://github.com/fzakaria/mvn2nix/archive/add-pom.tar.gz")
+    { };
+  buildMavenRepository = mvn2nix.buildMavenRepository;
   mavenRepository = buildMavenRepository { dependencies = import ./dependencies.nix; };
-inherit (pkgs) lib stdenv;
+inherit (pkgs) lib stdenv jdk11_headless maven makeWrapper;
 inherit (stdenv) mkDerivation;
 in mkDerivation rec {
   pname = "my-dummy-derivation";

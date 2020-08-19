@@ -1,15 +1,21 @@
-{ pkgs ? import <nixpkgs> {} }:
-  let buildMavenRepository = import (
-      fetchTarball https://github.com/fzakaria/mvn2nix/archive/master.tar.gz
-    ).buildMavenRepository;
-  mavenRepository = buildMavenRepository { dependencies = import ./dependencies.nix; };
-inherit (pkgs) lib stdenv;
-inherit (stdenv) mkDerivation;
+{ pkgs ? import <nixpkgs> { } }:
+let
+  mvn2nix = import
+    (fetchTarball "https://github.com/fzakaria/mvn2nix/archive/add-pom.tar.gz")
+    { };
+  buildMavenRepository = mvn2nix.buildMavenRepository;
+  mavenRepository =
+    buildMavenRepository { dependencies = import ./dependencies.nix; };
+  inherit (pkgs) lib stdenv jdk11_headless maven makeWrapper;
+  inherit (stdenv) mkDerivation;
 in mkDerivation rec {
   pname = "my-dummy-derivation";
   version = "0.01";
   name = "${pname}-${version}";
-  src = lib.cleanSource ./.;
+
+  # we set the source directory one level higher
+  # this is just for this example
+  src = lib.cleanSource ../.;
 
   buildInputs = [ jdk11_headless maven makeWrapper ];
   buildPhase = ''
@@ -33,3 +39,4 @@ in mkDerivation rec {
     makeWrapper ${jdk11_headless}/bin/java $out/bin/${pname} \
           --add-flags "-jar $out/${name}.jar"
   '';
+}
