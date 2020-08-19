@@ -21,7 +21,7 @@ let
     '';
     outputHashAlgo = "sha256";
     outputHashMode = "recursive";
-    outputHash = "1ax9hlbsrmjf1h327rs5vklx2c310h6clhd56pvyb79pc0k6ya7h";
+    outputHash = "1nkc3nspzsgn84azmjj02dy6g2gwnq53jpfgr94vxqpa1awhi2kq";
   };
 in mkDerivation rec {
   pname = "mvn2nix";
