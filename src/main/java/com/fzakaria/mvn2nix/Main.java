@@ -4,10 +4,7 @@ import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
 import com.google.common.io.ByteStreams;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.jboss.shrinkwrap.resolver.api.maven.Maven;
-import org.jboss.shrinkwrap.resolver.api.maven.MavenArtifactInfo;
-import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;
-import org.jboss.shrinkwrap.resolver.api.maven.MavenResolverSystem;
+import org.jboss.shrinkwrap.resolver.api.maven.*;
 import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
 import org.jboss.shrinkwrap.resolver.impl.maven.MavenWorkingSessionContainer;
 import org.jboss.shrinkwrap.resolver.impl.maven.MavenWorkingSessionImpl;
@@ -32,6 +29,7 @@ public class Main {
             "    url = \"%s\";\n" +
             "    layout = \"%s\";\n" +
             "    sha256 = \"%s\";\n" +
+            "    scope = \"%s\";\n" +
             "  };";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
@@ -51,7 +49,9 @@ public class Main {
          */
         final MavenResolvedArtifact[] artifacts = resolver
                 .loadPomFromFile(pomFile)
-                .importCompileAndRuntimeDependencies()
+                // TODO: Consider making this a CLI argument
+                //       consumers may not want to have system scopes
+                .importDependencies(ScopeType.values())
                 .resolve()
                 .withTransitivity()
                 .asResolvedArtifact();
@@ -76,6 +76,8 @@ public class Main {
 
             String layout = getMavenCalculatedLayout(artifact.getCoordinate());
 
+            String scope = artifact.getScope().toString();
+
             /*
              * Find a valid URL for the artifact
              */
@@ -89,7 +91,7 @@ public class Main {
 
             LOGGER.info("Resolved {} - {} - {}", canonical, url, sha256);
 
-            System.out.println(String.format(NIX_ATTR_TEMPLATE, canonical, url, layout, sha256));
+            System.out.println(String.format(NIX_ATTR_TEMPLATE, canonical, url, layout, sha256, scope));
         }
 
         /*
