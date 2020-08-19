@@ -31,12 +31,9 @@ You can then use this to download all the necessary dependencies to run your app
 Now that you have a **nix** dependencies file; we can re-construct a Maven repository using Nix!
 
 ```nix
-let pkgs = import <nixpkgs> {}
-    buildMavenRepository = import (
-        fetchTarball https://github.com/fzakaria/mvn2nix/archive/master.tar.gz
-        ).buildMavenRepository;
+let mvn2nix = import (fetchTarball https://github.com/fzakaria/mvn2nix/archive/master.tar.gz) { };
 in
-buildMavenRepository {}
+mvn2nix.buildMavenRepsitory {}
 ```
 
 This creates a **/nix/store** path which is a Maven repository that can be used, such as in `mvn package --offline -Dmaven.repo.local=${mavenRepository}`
