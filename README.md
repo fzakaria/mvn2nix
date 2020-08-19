@@ -13,15 +13,15 @@ $ nix run -f https://github.com/fzakaria/mvn2nix/archive/master.tar.gz \
 
 $ head dependencies.nix
 {
-	"org.slf4j:slf4j-api:jar:1.7.30" = {
-		url = "https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar";
-		sha256 = "cdba07964d1bb40a0761485c6b1e8c2f8fd9eb1d19c53928ac0d7f9510105c57";
-	};
-	"org.slf4j:slf4j-simple:jar:1.7.30" = {
-		url = "https://repo.maven.apache.org/maven2/org/slf4j/slf4j-simple/1.7.30/slf4j-simple-1.7.30.jar";
-		sha256 = "8b9279cbff6b9f88594efae3cf02039b6995030eec023ed43928748c41670fee";
-	};
-	"com.google.guava:guava:jar:29.0-jre" = {
+  "org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-impl-maven-archive:jar:3.1.4" = {
+    url = "https://repo.maven.apache.org/maven2/org/jboss/shrinkwrap/resolver/shrinkwrap-resolver-impl-maven-archive/3.1.4/shrinkwrap-resolver-impl-maven-archive-3.1.4.jar";
+    layout = "org/jboss/shrinkwrap/resolver/shrinkwrap-resolver-impl-maven-archive/3.1.4/shrinkwrap-resolver-impl-maven-archive-3.1.4.jar";
+    sha256 = "fec296a3b5a8e2cd6fcf8050f5b956f903d1251f901ac6ab8c0355c4e6b27a1c";
+    scope = "runtime";
+  };
+  "org.arquillian.spacelift:arquillian-spacelift:jar:1.0.2" = {
+    url = "https://repo.maven.apache.org/maven2/org/arquillian/spacelift/arquillian-spacelift/1.0.2/arquillian-spacelift-1.0.2.jar";
+    layout = "org/arquillian/spacelift/arquillian-spacelift/1.0.2/arquillian-spacelift-1.0.2.jar";
 ```
 
 You can then use this to download all the necessary dependencies to run your application.

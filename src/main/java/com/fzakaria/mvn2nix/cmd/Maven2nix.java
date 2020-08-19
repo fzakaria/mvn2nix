@@ -9,6 +9,7 @@ import com.google.common.io.ByteStreams;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.jboss.shrinkwrap.resolver.api.maven.*;
 import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
+import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinates;
 import org.jboss.shrinkwrap.resolver.impl.maven.MavenWorkingSessionContainer;
 import org.jboss.shrinkwrap.resolver.impl.maven.MavenWorkingSessionImpl;
 import org.slf4j.Logger;
@@ -42,7 +43,7 @@ public class Maven2nix implements Callable<Integer> {
     private File file;
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
         /*
          * Fetch the pom.xml that is relative to current directory.
          */
@@ -56,6 +57,7 @@ public class Maven2nix implements Callable<Integer> {
          */
         final MavenResolvedArtifact[] artifacts = resolver
                 .loadPomFromFile(pomFile)
+                .importTestDependencies()
                 // TODO: Consider making this a CLI argument
                 //       consumers may not want to have system scopes
                 .importDependencies(ScopeType.values())
@@ -76,32 +78,55 @@ public class Maven2nix implements Callable<Integer> {
          */
         for (MavenArtifactInfo artifact : artifacts) {
 
-            String canonical = artifact.getCoordinate().toCanonicalForm();
+            MavenCoordinate mavenCoordinate = artifact.getCoordinate();
+            ScopeType scope = artifact.getScope();
 
-            String layout = getMavenCalculatedLayout(artifact.getCoordinate());
+            // Add the maven artifact as a dependency
+            collectDependency(mavenCoordinate, scope, repositories, information);
 
-            String scope = artifact.getScope().toString();
+            // maven needs the pom file in the repository as well
+            // TODO: Figure out a cleaner way to support this
+            //       right now it's just a separate entry in the model
+            MavenCoordinate pomMavenCoordinate = MavenCoordinates.createCoordinate(
+                    mavenCoordinate.getGroupId(),
+                    mavenCoordinate.getArtifactId(),
+                    mavenCoordinate.getVersion(),
+                    PackagingType.POM,
+                    mavenCoordinate.getClassifier()
+            );
+            collectDependency(pomMavenCoordinate, ScopeType.IMPORT, repositories, information);
 
-            /*
-             * Find a valid URL for the artifact
-             */
-            URL url = repositories.stream()
-                    .map(repository -> getRepositoryArtifactUrl(artifact, repository))
-                    .filter(Maven2nix::doesUrlExist)
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException(artifact + " could not be found in any repository."));
-
-            String sha256 = getSha256OfUrl(url);
-
-            LOGGER.info("Resolved {} - {} - {}", canonical, url, sha256);
-
-            information.addDependency(canonical, new MavenArtifact(url, layout, sha256, scope) );
         }
 
         PrettyPrintNixVisitor visitor = new PrettyPrintNixVisitor(System.out);
         information.accept(visitor);
 
         return 0;
+    }
+
+    public static void collectDependency(MavenCoordinate mavenCoordinate,
+                                         ScopeType scope,
+                                         List<RemoteRepository> repositories,
+                                         MavenNixInformation information) {
+
+        String canonical = mavenCoordinate.toCanonicalForm();
+
+        String layout = getMavenCalculatedLayout(mavenCoordinate);
+
+        /*
+         * Find a valid URL for the artifact
+         */
+        URL url = repositories.stream()
+                .map(repository -> getRepositoryArtifactUrl(mavenCoordinate, repository))
+                .filter(Maven2nix::doesUrlExist)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException(mavenCoordinate.getArtifactId() + " could not be found in any repository."));
+
+        String sha256 = getSha256OfUrl(url);
+
+        LOGGER.info("Resolved {} - {} - {}", canonical, url, sha256);
+
+        information.addDependency(canonical, new MavenArtifact(url, layout, sha256, scope.toString()) );
     }
 
 
@@ -131,7 +156,7 @@ public class Maven2nix implements Callable<Integer> {
         }
     }
 
-    public static URL getRepositoryArtifactUrl(MavenArtifactInfo artifact, RemoteRepository repository) {
+    public static URL getRepositoryArtifactUrl(MavenCoordinate mavenCoordinate, RemoteRepository repository) {
         String url = repository.getUrl();
 
         if (!url.endsWith("/")) {
@@ -139,7 +164,7 @@ public class Maven2nix implements Callable<Integer> {
         }
 
         try {
-            return new URL(url + getMavenCalculatedLayout(artifact.getCoordinate()));
+            return new URL(url + getMavenCalculatedLayout(mavenCoordinate));
         } catch (MalformedURLException e) {
             throw new RuntimeException("Could not contact repository: " + url);
         }
