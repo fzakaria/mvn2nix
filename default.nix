@@ -2,4 +2,8 @@
   config = { };
   overlays = [ (import ./overlay.nix) ];
 } }:
-pkgs.mvn2nix
+{
+	mvn2nix = pkgs.mvn2nix;
+
+	buildMavenRepsitory = pkgs.buildMavenRepsitory;
+}

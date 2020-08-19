@@ -30,6 +30,7 @@ public class Main {
 
     private static final String NIX_ATTR_TEMPLATE = "\t\"%s\" = {\n" +
             "\t\turl = \"%s\";\n" +
+            "\t\tlayout = \"%s\";\n" +
             "\t\tsha256 = \"%s\";\n" +
             "\t};";
 
@@ -72,6 +73,9 @@ public class Main {
         for (MavenArtifactInfo artifact : artifacts) {
 
             String canonical = artifact.getCoordinate().toCanonicalForm();
+
+            String layout = getMavenCalculatedLayout(artifact.getCoordinate());
+
             /*
              * Find a valid URL for the artifact
              */
@@ -85,7 +89,7 @@ public class Main {
 
             LOGGER.info("Resolved {} - {} - {}", canonical, url, sha256);
 
-            System.out.println(String.format(NIX_ATTR_TEMPLATE, canonical, url, sha256));
+            System.out.println(String.format(NIX_ATTR_TEMPLATE, canonical, url, layout, sha256));
         }
 
         /*
