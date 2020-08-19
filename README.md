@@ -59,14 +59,14 @@ $ tree /nix/store/2ps43297g5nii2k15kfy8z46fam51d8x-buildMavenRepository | head
 ### Sample Derivation
 
 ```nix
-let pkgs = import <nixpkgs> {}
-    buildMavenRepository = import (
-        fetchTarball https://github.com/fzakaria/mvn2nix/archive/master.tar.gz
-        ).buildMavenRepository;
-    mavenRepository = buildMavenRepository {};
+{ pkgs ? import <nixpkgs> {} }:
+  let buildMavenRepository = import (
+      fetchTarball https://github.com/fzakaria/mvn2nix/archive/master.tar.gz
+    ).buildMavenRepository;
+  mavenRepository = buildMavenRepository {};
+inherit (pkgs) lib stdenv;
+inherit (stdenv) mkDerivation;
 in:
-with pkgs;
-with stdenv;
 in mkDerivation rec {
   pname = "my-dummy-derivation";
   version = "0.01"

@@ -28,11 +28,11 @@ import java.util.List;
 
 public class Main {
 
-    private static final String NIX_ATTR_TEMPLATE = "\t\"%s\" = {\n" +
-            "\t\turl = \"%s\";\n" +
-            "\t\tlayout = \"%s\";\n" +
-            "\t\tsha256 = \"%s\";\n" +
-            "\t};";
+    private static final String NIX_ATTR_TEMPLATE = "  \"%s\" = {\n" +
+            "    url = \"%s\";\n" +
+            "    layout = \"%s\";\n" +
+            "    sha256 = \"%s\";\n" +
+            "  };";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
