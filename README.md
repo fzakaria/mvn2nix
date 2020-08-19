@@ -8,7 +8,7 @@ In the same spirit of [bundix](https://github.com/nix-community/bundix), **mvn2n
 *transitive closure* of all dependencies required by the application.
 
 ```bash
-nix run -f https://github.com/fzakaria/mvn2nix/archive/master.tar.gz --command mvn2nix 1> dependencies.nix
+nix run -f https://github.com/fzakaria/mvn2nix/archive/master.tar.gz --command mvn2nix > dependencies.nix
 
 
 $ head dependencies.nix
