@@ -47,7 +47,6 @@ public class PrettyPrintNixVisitor implements Visitor {
         writeln("url = \"%s\";", artifact.url);
         writeln("layout = \"%s\";", artifact.layout);
         writeln("sha256 = \"%s\";", artifact.sha256);
-        writeln("scope = \"%s\";", artifact.scope);
     }
 
     private void indent(Runnable run) {

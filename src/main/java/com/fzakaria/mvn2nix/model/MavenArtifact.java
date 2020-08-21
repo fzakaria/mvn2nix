@@ -7,13 +7,11 @@ public class MavenArtifact implements Model{
     public final URL url;
     public final String layout;
     public final String sha256;
-    public final String scope;
 
-    public MavenArtifact(URL url, String layout, String sha256, String scope) {
+    public MavenArtifact(URL url, String layout, String sha256) {
         this.url = url;
         this.layout = layout;
         this.sha256 = sha256;
-        this.scope = scope;
     }
 
     @Override
