@@ -2,10 +2,14 @@ package com.fzakaria.mvn2nix.maven;
 
 import com.fzakaria.mvn2nix.maven.listener.LoggingRepositoryListener;
 import com.fzakaria.mvn2nix.maven.listener.LoggingTransferListener;
+import org.apache.maven.lifecycle.LifeCyclePluginAnalyzer;
+import org.apache.maven.lifecycle.internal.DefaultLifecyclePluginAnalyzer;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginExecution;
+import org.apache.maven.model.building.DefaultModelBuilder;
 import org.apache.maven.model.building.DefaultModelBuilderFactory;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
-import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelBuildingException;
 import org.apache.maven.model.building.ModelBuildingRequest;
 import org.apache.maven.model.resolution.ModelResolver;
@@ -19,12 +23,18 @@ import org.apache.maven.settings.building.SettingsBuildingRequest;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.ArtifactResolver;
 import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.impl.VersionRangeResolver;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
+import org.eclipse.aether.spi.connector.transport.TransporterFactory;
+import org.eclipse.aether.spi.locator.ServiceLocator;
+import org.eclipse.aether.transport.file.FileTransporterFactory;
+import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +52,33 @@ public final class Bootstrap {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Bootstrap.class);
 
-    public static RepositorySystem newRepositorySystem() {
-        return ManualRepositorySystemFactory.newRepositorySystem();
+    public static ServiceLocator serviceLocator() {
+        /*
+         * Aether's components implement org.eclipse.aether.spi.locator.Service to ease manual wiring and using the
+         * prepopulated DefaultServiceLocator, we only need to register the repository connector and transporter
+         * factories.
+         */
+        DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
+        locator.addService( RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class );
+        locator.addService( TransporterFactory.class, FileTransporterFactory.class );
+        locator.addService( TransporterFactory.class, HttpTransporterFactory.class );
+        locator.addService(LifeCyclePluginAnalyzer.class, DefaultLifecyclePluginAnalyzer.class );
+
+        locator.setErrorHandler( new DefaultServiceLocator.ErrorHandler()
+        {
+            @Override
+            public void serviceCreationFailed( Class<?> type, Class<?> impl, Throwable exception )
+            {
+                LOGGER.error( "Service creation failed for {} with implementation {}",
+                        type, impl, exception );
+            }
+        } );
+
+        return locator;
+    }
+
+    public static RepositorySystem newRepositorySystem(ServiceLocator locator) {
+        return locator.getService( RepositorySystem.class );
     }
 
     public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system ) {
@@ -100,9 +135,8 @@ public final class Bootstrap {
         return new RemoteRepository.Builder(id, type, url).build();
     }
 
-    public static ModelResolver createModelResolver() {
-        final DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
-        final RepositorySystemSession session = newRepositorySystemSession(newRepositorySystem());
+    public static ModelResolver createModelResolver(ServiceLocator locator) {
+        final RepositorySystemSession session = newRepositorySystemSession(newRepositorySystem(locator));
         ModelResolver modelResolver;
         try {
             Constructor<?> constr = Class.forName("org.apache.maven.repository.internal.DefaultModelResolver").getConstructors()[0];
@@ -127,21 +161,45 @@ public final class Bootstrap {
      * @param pom the POM file to resolve.
      * @return the effective model.
      */
-    public static Model getEffectiveModel(File pom) {
+    public static Model getEffectiveModel(ServiceLocator locator, File pom) {
         ModelBuildingRequest request = new DefaultModelBuildingRequest()
                 .setProcessPlugins(true)
                 .setPomFile(pom)
-                .setModelResolver(Bootstrap.createModelResolver())
+                .setModelResolver(Bootstrap.createModelResolver(locator))
                 .setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL)
                 .setSystemProperties(System.getProperties());
 
-        ModelBuilder builder = new DefaultModelBuilderFactory().newInstance();
+        DefaultModelBuilder builder = new DefaultModelBuilderFactory().newInstance();
         try {
             return builder.build(request).getEffectiveModel();
         } catch(ModelBuildingException ex) {
             LOGGER.warn("Could not build maven model.", ex);
             throw new RuntimeException(ex);
         }
+    }
+
+    /**
+     * Every version of maven has a set of default plugins which can be found in
+     * <b>default-bindings.xml</b> in maven-core.
+     * Rather than setup a whole Plexus container; we hardcode the list here for our particular version.
+     */
+    public static List<Plugin> defaultPlugins() {
+        List<Plugin> plugins = new ArrayList<>();
+        plugins.add( newPlugin( "maven-compiler-plugin", "3.1") );
+        plugins.add( newPlugin( "maven-resources-plugin", "2.6" ) );
+        plugins.add( newPlugin( "maven-surefire-plugin", "2.12.4" ) );
+        plugins.add( newPlugin( "maven-jar-plugin", "2.4" ) );
+        plugins.add( newPlugin( "maven-install-plugin", "2.4" ) );
+        plugins.add( newPlugin( "maven-deploy-plugin", "2.7" ) );
+        return plugins;
+    }
+
+    private static Plugin newPlugin( String artifactId, String version) {
+        Plugin plugin = new Plugin();
+        plugin.setGroupId( "org.apache.maven.plugins" );
+        plugin.setArtifactId( artifactId );
+        plugin.setVersion(version);
+        return plugin;
     }
 
 

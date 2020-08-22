@@ -1,7 +1,9 @@
 package com.fzakaria.mvn2nix.maven;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.maven.RepositoryUtils;
+import org.apache.maven.lifecycle.LifeCyclePluginAnalyzer;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -13,6 +15,7 @@ import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.spi.locator.ServiceLocator;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.filter.ScopeDependencyFilter;
 import org.eclipse.aether.util.graph.visitor.FilteringDependencyVisitor;
@@ -40,14 +43,16 @@ public class Aether {
     private static final String MAVEN_PLUGIN_ARTIFACT_TYPE = "maven-plugin";
 
     private final RepositorySystem system;
+    private final ServiceLocator locator;
 
-    public Aether(RepositorySystem system) {
+    public Aether(ServiceLocator locator, RepositorySystem system) {
+        this.locator = locator;
         this.system = system;
     }
 
     public List<Artifact> resolveTransitiveDependenciesFromPom(File pom) throws DependencyCollectionException {
         DefaultRepositorySystemSession session = Bootstrap.newRepositorySystemSession(system);
-        final Model model = Bootstrap.getEffectiveModel(pom);
+        final Model model = Bootstrap.getEffectiveModel(locator, pom);
 
         Set<Artifact> solution = new HashSet<>();
 
@@ -100,11 +105,19 @@ public class Aether {
         DefaultRepositorySystemSession session = Bootstrap.newRepositorySystemSession(system);
         ArtifactType artifactType = session.getArtifactTypeRegistry().get(MAVEN_PLUGIN_ARTIFACT_TYPE);
 
-        final Model model = Bootstrap.getEffectiveModel(pom);
+        final Model model = Bootstrap.getEffectiveModel(locator, pom);
 
         Set<Artifact> solution = new HashSet<>();
 
-        for (Plugin plugin : model.getBuild().getPlugins()) {
+        List<Plugin> plugins = model.getBuild().getPlugins();
+
+        /*
+         * Maven includes some default plugins always!
+         */
+        List<Plugin> defaultPlugins = Bootstrap.defaultPlugins();
+        plugins.addAll(defaultPlugins);
+
+        for (Plugin plugin : Sets.newHashSet(plugins)) {
             Artifact artifact = new DefaultArtifact(plugin.getGroupId(),
                     plugin.getArtifactId(),
                     artifactType.getClassifier(),
@@ -115,6 +128,25 @@ public class Aether {
             CollectRequest request = new CollectRequest();
             request.setRepositories(Bootstrap.newRemoteRepositories());
             request.setRoot(new Dependency(artifact, JavaScopes.RUNTIME));
+
+            if (model.getBuild().getPluginManagement() != null) {
+                List<Dependency> managedPlugins = model
+                        .getBuild()
+                        .getPluginManagement()
+                        .getPlugins()
+                        .stream()
+                        .map(p ->  {
+                            return new DefaultArtifact(p.getGroupId(),
+                                    p.getArtifactId(),
+                                    artifactType.getClassifier(),
+                                    artifactType.getExtension(),
+                                    p.getVersion(),
+                                    artifactType);
+                        })
+                        .map(a -> new Dependency(a, JavaScopes.RUNTIME))
+                        .collect(Collectors.toList());
+                request.setManagedDependencies(managedPlugins);
+            }
 
             for ( org.apache.maven.model.Dependency dependency : plugin.getDependencies() ) {
                 Dependency pluginDep =

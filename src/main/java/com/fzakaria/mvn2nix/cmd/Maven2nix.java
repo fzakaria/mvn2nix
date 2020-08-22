@@ -13,6 +13,7 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.spi.locator.ServiceLocator;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,9 +50,11 @@ public class Maven2nix implements Callable<Integer> {
     public Integer call() throws Exception {
         LOGGER.info("Reading {}", file);
 
-        RepositorySystem system = Bootstrap.newRepositorySystem();
+        ServiceLocator locator = Bootstrap.serviceLocator();
 
-        Aether aether = new Aether(system);
+        RepositorySystem system = Bootstrap.newRepositorySystem(locator);
+
+        Aether aether = new Aether(locator, system);
 
         /*
          * Collect all the artifacts
