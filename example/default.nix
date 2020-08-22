@@ -19,6 +19,7 @@ in mkDerivation rec {
 
   buildInputs = [ jdk11_headless maven makeWrapper ];
   buildPhase = ''
+    echo "Building with maven repository ${mavenRepository}"
     mvn package --offline -Dmaven.repo.local=${mavenRepository}
   '';
 
