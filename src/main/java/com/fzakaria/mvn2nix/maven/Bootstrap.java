@@ -59,32 +59,30 @@ public final class Bootstrap {
          * factories.
          */
         DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
-        locator.addService( RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class );
-        locator.addService( TransporterFactory.class, FileTransporterFactory.class );
-        locator.addService( TransporterFactory.class, HttpTransporterFactory.class );
-        locator.addService(LifeCyclePluginAnalyzer.class, DefaultLifecyclePluginAnalyzer.class );
+        locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
+        locator.addService(TransporterFactory.class, FileTransporterFactory.class);
+        locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
+        locator.addService(LifeCyclePluginAnalyzer.class, DefaultLifecyclePluginAnalyzer.class);
 
-        locator.setErrorHandler( new DefaultServiceLocator.ErrorHandler()
-        {
+        locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
             @Override
-            public void serviceCreationFailed( Class<?> type, Class<?> impl, Throwable exception )
-            {
-                LOGGER.error( "Service creation failed for {} with implementation {}",
-                        type, impl, exception );
+            public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
+                LOGGER.error("Service creation failed for {} with implementation {}",
+                        type, impl, exception);
             }
-        } );
+        });
 
         return locator;
     }
 
     public static RepositorySystem newRepositorySystem(ServiceLocator locator) {
-        return locator.getService( RepositorySystem.class );
+        return locator.getService(RepositorySystem.class);
     }
 
-    public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system ) {
+    public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system) {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
 
-        session.setLocalRepositoryManager( system.newLocalRepositoryManager( session, defaultLocalRepository() ) );
+        session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, defaultLocalRepository()));
         session.setTransferListener(new LoggingTransferListener());
         session.setRepositoryListener(new LoggingRepositoryListener());
 
@@ -98,7 +96,7 @@ public final class Bootstrap {
     public static Settings defaultMavenSettings() {
         try {
             File settingsXml = new File(new File(System.getProperty("user.home"), ".m2"), "settings.xml");
-            if(! settingsXml.canRead()) {
+            if (!settingsXml.canRead()) {
                 LOGGER.info("Could no read settings file.");
                 new Settings();
             }
@@ -115,7 +113,7 @@ public final class Bootstrap {
     }
 
     public static List<RemoteRepository> newRemoteRepositories() {
-        return new ArrayList<>(Collections.singletonList( newCentralRepository() ) );
+        return new ArrayList<>(Collections.singletonList(newCentralRepository()));
     }
 
     public static RemoteRepository newCentralRepository() {
@@ -125,10 +123,9 @@ public final class Bootstrap {
     /**
      * Creates a {@link RemoteRepository} instance from the elements of a maven artifact specification.
      *
-     * @param id    some user defined ID for the repository
-     * @param type  the repository type. typically "default".
-     * @param url   the repository URL.
-     *
+     * @param id   some user defined ID for the repository
+     * @param type the repository type. typically "default".
+     * @param url  the repository URL.
      * @return the {@link RemoteRepository} specification.
      */
     public static RemoteRepository createRemoteRepository(String id, String type, String url) {
@@ -154,7 +151,7 @@ public final class Bootstrap {
 
     /**
      * Resolve the effective Maven model (pom) for a POM file.
-     *
+     * <p>
      * This resolves the POM hierarchy (parents and modules) and creates an
      * overall model.
      *
@@ -172,7 +169,7 @@ public final class Bootstrap {
         DefaultModelBuilder builder = new DefaultModelBuilderFactory().newInstance();
         try {
             return builder.build(request).getEffectiveModel();
-        } catch(ModelBuildingException ex) {
+        } catch (ModelBuildingException ex) {
             LOGGER.warn("Could not build maven model.", ex);
             throw new RuntimeException(ex);
         }
@@ -185,19 +182,19 @@ public final class Bootstrap {
      */
     public static List<Plugin> defaultPlugins() {
         List<Plugin> plugins = new ArrayList<>();
-        plugins.add( newPlugin( "maven-compiler-plugin", "3.1") );
-        plugins.add( newPlugin( "maven-resources-plugin", "2.6" ) );
-        plugins.add( newPlugin( "maven-surefire-plugin", "2.12.4" ) );
-        plugins.add( newPlugin( "maven-jar-plugin", "2.4" ) );
-        plugins.add( newPlugin( "maven-install-plugin", "2.4" ) );
-        plugins.add( newPlugin( "maven-deploy-plugin", "2.7" ) );
+        plugins.add(newPlugin("maven-compiler-plugin", "3.1"));
+        plugins.add(newPlugin("maven-resources-plugin", "2.6"));
+        plugins.add(newPlugin("maven-surefire-plugin", "2.12.4"));
+        plugins.add(newPlugin("maven-jar-plugin", "2.4"));
+        plugins.add(newPlugin("maven-install-plugin", "2.4"));
+        plugins.add(newPlugin("maven-deploy-plugin", "2.7"));
         return plugins;
     }
 
-    private static Plugin newPlugin( String artifactId, String version) {
+    private static Plugin newPlugin(String artifactId, String version) {
         Plugin plugin = new Plugin();
-        plugin.setGroupId( "org.apache.maven.plugins" );
-        plugin.setArtifactId( artifactId );
+        plugin.setGroupId("org.apache.maven.plugins");
+        plugin.setArtifactId(artifactId);
         plugin.setVersion(version);
         return plugin;
     }

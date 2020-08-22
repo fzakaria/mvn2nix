@@ -135,7 +135,7 @@ public class Aether {
                         .getPluginManagement()
                         .getPlugins()
                         .stream()
-                        .map(p ->  {
+                        .map(p -> {
                             return new DefaultArtifact(p.getGroupId(),
                                     p.getArtifactId(),
                                     artifactType.getClassifier(),
@@ -148,13 +148,13 @@ public class Aether {
                 request.setManagedDependencies(managedPlugins);
             }
 
-            for ( org.apache.maven.model.Dependency dependency : plugin.getDependencies() ) {
+            for (org.apache.maven.model.Dependency dependency : plugin.getDependencies()) {
                 Dependency pluginDep =
-                        RepositoryUtils.toDependency( dependency, session.getArtifactTypeRegistry() );
-                if ( !JavaScopes.SYSTEM.equals( pluginDep.getScope() ) ) {
-                    pluginDep = pluginDep.setScope( JavaScopes.RUNTIME );
+                        RepositoryUtils.toDependency(dependency, session.getArtifactTypeRegistry());
+                if (!JavaScopes.SYSTEM.equals(pluginDep.getScope())) {
+                    pluginDep = pluginDep.setScope(JavaScopes.RUNTIME);
                 }
-                request.addDependency( pluginDep );
+                request.addDependency(pluginDep);
             }
 
 

@@ -81,12 +81,12 @@ public class Maven2nix implements Callable<Integer> {
              */
             boolean found = false;
             for (RemoteRepository repository : Bootstrap.newRemoteRepositories()) {
-               URL url = getRepositoryArtifactUrl(artifact, repository, session);
-               if (!doesUrlExist(url)) {
-                   continue;
-               }
-               registerArtifact(artifact, repository, session, information);
-               found = true;
+                URL url = getRepositoryArtifactUrl(artifact, repository, session);
+                if (!doesUrlExist(url)) {
+                    continue;
+                }
+                registerArtifact(artifact, repository, session, information);
+                found = true;
             }
 
             if (!found) {
@@ -178,6 +178,7 @@ public class Maven2nix implements Callable<Integer> {
 
     /**
      * Check whether a given URL
+     *
      * @param url The URL for the pom file.
      * @return
      */
