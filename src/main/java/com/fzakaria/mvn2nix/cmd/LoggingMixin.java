@@ -159,7 +159,7 @@ public class LoggingMixin {
         builder.setStatusLevel(Level.ERROR); // show internal log4j2 errors
         builder.setConfigurationName("QuickAndDirtySetup");
         AppenderComponentBuilder appenderBuilder = builder.newAppender("Stdout", "CONSOLE")
-                .addAttribute("target", ConsoleAppender.Target.SYSTEM_OUT);
+                .addAttribute("target", ConsoleAppender.Target.SYSTEM_ERR);
         appenderBuilder.add(builder.newLayout("PatternLayout")
                 .addAttribute("pattern", "%d [%t] %-5level: %msg%n%throwable"));
         builder.add(appenderBuilder);

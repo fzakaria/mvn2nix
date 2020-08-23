@@ -9,8 +9,8 @@ let
   inherit (pkgs) lib stdenv jdk11_headless maven makeWrapper;
   inherit (stdenv) mkDerivation;
 in mkDerivation rec {
-  pname = "my-dummy-derivation";
-  version = "0.01";
+  pname = "mvn2nix";
+  version = "0.1";
   name = "${pname}-${version}";
 
   # we set the source directory one level higher

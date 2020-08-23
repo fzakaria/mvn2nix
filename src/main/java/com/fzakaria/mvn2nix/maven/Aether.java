@@ -2,8 +2,8 @@ package com.fzakaria.mvn2nix.maven;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.logging.log4j.util.Strings;
 import org.apache.maven.RepositoryUtils;
-import org.apache.maven.lifecycle.LifeCyclePluginAnalyzer;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -15,6 +15,10 @@ import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.spi.locator.ServiceLocator;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.filter.ScopeDependencyFilter;
@@ -24,9 +28,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -44,21 +53,87 @@ public class Aether {
 
     private final RepositorySystem system;
     private final ServiceLocator locator;
+    private final DefaultRepositorySystemSession session;
 
     public Aether(ServiceLocator locator, RepositorySystem system) {
         this.locator = locator;
         this.system = system;
+        this.session = Bootstrap.newRepositorySystemSession(system);
+        // guard against mutating
+        session.setReadOnly();
+    }
+
+    public List<RemoteRepository> remoteRepositories(File pom) {
+        final Model model = Bootstrap.getEffectiveModel(locator, pom);
+        List<RemoteRepository> repositories = model.getRepositories()
+                .stream()
+                .map(r -> Bootstrap.createRemoteRepository(r.getId(), null, r.getUrl()))
+                .collect(Collectors.toList());
+        repositories.add(Bootstrap.newCentralRepository());
+        return repositories;
+    }
+
+    public Collection<Artifact> resolveParentPoms(File pom, Set<Artifact> artifacts) throws ArtifactResolutionException {
+
+        Set<Artifact> parents = new HashSet<>();
+
+        Map<String, Artifact> seenArtifacts = new HashMap<>();
+        Queue<Artifact> queue = new ArrayDeque<>();
+        queue.addAll(artifacts);
+
+        while (!queue.isEmpty()) {
+
+            Artifact artifact = queue.poll();
+
+            // only look at the POM files
+            if (!artifact.getExtension().equals("pom")) {
+                continue;
+            }
+
+            // don't revisit seen artifacts
+            if (seenArtifacts.containsKey(canonicalName(artifact))) {
+                continue;
+            }
+
+            // only need to register parent artifacts
+            seenArtifacts.put(canonicalName(artifact), artifact);
+
+            // we will now resolve it
+            ArtifactRequest request = new ArtifactRequest()
+                    .setArtifact(artifact)
+                    .setRepositories(remoteRepositories(pom));
+            ArtifactResult result = system.resolveArtifact(session, request);
+
+            /*
+             * Parse this pom file to find any parents
+             */
+            final Model model = Bootstrap.getEffectiveModel(locator, result.getArtifact().getFile());
+
+            // do nothing if no parent
+            if (model.getParent() == null) {
+                continue;
+            }
+
+            Artifact parent = new DefaultArtifact(model.getParent().getGroupId(),
+                    model.getParent().getArtifactId(),
+                    "pom",
+                    model.getParent().getVersion());
+
+            queue.add(parent);
+            parents.add(parent);
+        }
+
+        return parents;
     }
 
     public List<Artifact> resolveTransitiveDependenciesFromPom(File pom) throws DependencyCollectionException {
-        DefaultRepositorySystemSession session = Bootstrap.newRepositorySystemSession(system);
         final Model model = Bootstrap.getEffectiveModel(locator, pom);
 
         Set<Artifact> solution = new HashSet<>();
 
 
         CollectRequest request = new CollectRequest();
-        request.setRepositories(Bootstrap.newRemoteRepositories());
+        request.setRepositories(remoteRepositories(pom));
 
         if (model.getDependencyManagement() != null) {
             List<Dependency> managedDependencies = model
@@ -102,7 +177,6 @@ public class Aether {
      * @throws DependencyCollectionException
      */
     public List<Artifact> resolveTransitivePluginDependenciesFromPom(File pom) throws DependencyCollectionException {
-        DefaultRepositorySystemSession session = Bootstrap.newRepositorySystemSession(system);
         ArtifactType artifactType = session.getArtifactTypeRegistry().get(MAVEN_PLUGIN_ARTIFACT_TYPE);
 
         final Model model = Bootstrap.getEffectiveModel(locator, pom);
@@ -126,7 +200,7 @@ public class Aether {
                     artifactType);
 
             CollectRequest request = new CollectRequest();
-            request.setRepositories(Bootstrap.newRemoteRepositories());
+            request.setRepositories(remoteRepositories(pom));
             request.setRoot(new Dependency(artifact, JavaScopes.RUNTIME));
 
             if (model.getBuild().getPluginManagement() != null) {
@@ -171,6 +245,22 @@ public class Aether {
         }
 
         return Lists.newArrayList(solution);
+    }
+
+    public static String canonicalName(Artifact artifact) {
+        if (Strings.isBlank(artifact.getClassifier())) {
+            return String.format("%s:%s:%s:%s",
+                    artifact.getGroupId(),
+                    artifact.getArtifactId(),
+                    artifact.getExtension(),
+                    artifact.getVersion());
+        }
+        return String.format("%s:%s:%s:%s:%s",
+                artifact.getGroupId(),
+                artifact.getArtifactId(),
+                artifact.getExtension(),
+                artifact.getClassifier(),
+                artifact.getVersion());
     }
 
 }

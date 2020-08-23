@@ -29,7 +29,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -59,7 +61,7 @@ public class Maven2nix implements Callable<Integer> {
         /*
          * Collect all the artifacts
          */
-        List<Artifact> artifacts = new ArrayList<>();
+        Set<Artifact> artifacts = new HashSet<>();
         artifacts.addAll(aether.resolveTransitiveDependenciesFromPom(file));
         artifacts.addAll(aether.resolveTransitivePluginDependenciesFromPom(file));
 
@@ -68,7 +70,11 @@ public class Maven2nix implements Callable<Integer> {
          */
         artifacts = artifacts.stream().flatMap(artifact ->
                 Stream.of(artifact, new SubArtifact(artifact, "", "pom")))
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
+
+        artifacts.addAll(
+                aether.resolveParentPoms(file, artifacts)
+        );
 
         RepositorySystemSession session = Bootstrap.newRepositorySystemSession(system);
 
@@ -109,28 +115,12 @@ public class Maven2nix implements Callable<Integer> {
         URL url = getRepositoryArtifactUrl(artifact, repository, session);
         String relativePath = session.getLocalRepositoryManager().getPathForRemoteArtifact(artifact, repository, "");
         information.addDependency(
-                canonicalName(artifact),
+                Aether.canonicalName(artifact),
                 new MavenArtifact(url,
                         relativePath,
                         getSha256OfUrl(url)
                 )
         );
-    }
-
-    public static String canonicalName(Artifact artifact) {
-        if (Strings.isBlank(artifact.getClassifier())) {
-            return String.format("%s:%s:%s:%s",
-                    artifact.getGroupId(),
-                    artifact.getArtifactId(),
-                    artifact.getExtension(),
-                    artifact.getVersion());
-        }
-        return String.format("%s:%s:%s:%s:%s",
-                artifact.getGroupId(),
-                artifact.getArtifactId(),
-                artifact.getExtension(),
-                artifact.getClassifier(),
-                artifact.getVersion());
     }
 
     public static URL getRepositoryArtifactUrl(Artifact artifact,
@@ -166,6 +156,8 @@ public class Maven2nix implements Callable<Integer> {
             if (code >= 400) {
                 throw new RuntimeException("Getching the url failed with status code: " + code);
             }
+
+            LOGGER.info("calculating sha256 for {}", url);
 
             final HashingInputStream inputStream = new HashingInputStream(Hashing.sha256(), connection.getInputStream());
             ByteStreams.exhaust(inputStream);
