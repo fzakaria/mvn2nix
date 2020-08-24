@@ -6,8 +6,7 @@ import com.fzakaria.mvn2nix.model.MavenArtifact;
 import com.fzakaria.mvn2nix.model.MavenNixInformation;
 import com.fzakaria.mvn2nix.model.PrettyPrintNixVisitor;
 import com.google.common.hash.Hashing;
-import com.google.common.hash.HashingInputStream;
-import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine.Command;
@@ -69,7 +68,11 @@ public class Maven2nix implements Callable<Integer> {
                                     if (!doesUrlExist(url)) {
                                         continue;
                                     }
-                                    String sha256 = getSha256OfUrl(url);
+
+                                    File localArtifact = maven.findArtifactInLocalRepository(artifact)
+                                            .orElseThrow(() -> new IllegalStateException("Should never happen"));
+
+                                    String sha256 = calculateSha256OfFile(localArtifact);
                                     return new MavenArtifact(url, artifact.getLayout(), sha256);
                                 }
                                 throw new RuntimeException(String.format("Could not find artifact %s in any repository", artifact));
@@ -96,29 +99,9 @@ public class Maven2nix implements Callable<Integer> {
         }
     }
 
-    public static String getSha256OfUrl(URL url) {
+    public static String calculateSha256OfFile(File file) {
         try {
-            URLConnection urlConnection = url.openConnection();
-            if (!(urlConnection instanceof HttpURLConnection)) {
-                throw new RuntimeException("The url is not of type http provided.");
-            }
-
-            HttpURLConnection connection = (HttpURLConnection) urlConnection;
-            connection.setRequestMethod("GET");
-            connection.setInstanceFollowRedirects(true);
-            connection.connect();
-
-            int code = connection.getResponseCode();
-            if (code >= 400) {
-                throw new RuntimeException("Fetching the url failed with status code: " + code);
-            }
-
-            LOGGER.info("calculating sha256 for {}", url);
-
-            final HashingInputStream inputStream = new HashingInputStream(Hashing.sha256(), connection.getInputStream());
-            ByteStreams.exhaust(inputStream);
-
-            return inputStream.hash().toString();
+            return Files.asByteSource(file).hash(Hashing.sha256()).toString();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
