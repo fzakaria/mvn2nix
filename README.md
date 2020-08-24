@@ -1,5 +1,7 @@
 # mvn2nix
 
+[![built with nix](https://builtwithnix.org/badge.svg)](https://builtwithnix.org)
+
 ## How to use this
 
 ### Generating the Nix dependencies file
