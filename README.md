@@ -13,15 +13,15 @@ $ nix run -f https://github.com/fzakaria/mvn2nix/archive/master.tar.gz \
 
 $ head dependencies.nix
 {
-	"org.slf4j:slf4j-api:jar:1.7.30" = {
-		url = "https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar";
-		sha256 = "cdba07964d1bb40a0761485c6b1e8c2f8fd9eb1d19c53928ac0d7f9510105c57";
-	};
-	"org.slf4j:slf4j-simple:jar:1.7.30" = {
-		url = "https://repo.maven.apache.org/maven2/org/slf4j/slf4j-simple/1.7.30/slf4j-simple-1.7.30.jar";
-		sha256 = "8b9279cbff6b9f88594efae3cf02039b6995030eec023ed43928748c41670fee";
-	};
-	"com.google.guava:guava:jar:29.0-jre" = {
+  "org.slf4j:jcl-over-slf4j:pom::1.5.6" = {
+    url = "https://repo.maven.apache.org/maven2/org/slf4j/jcl-over-slf4j/1.5.6/jcl-over-slf4j-1.5.6.pom";
+    layout = "org/slf4j/jcl-over-slf4j/1.5.6/jcl-over-slf4j-1.5.6.pom";
+    sha256 = "d71d7748e68bb9cb7ad38b95d17c0466e31fc1f4d15bb1e635f3ebad34a38ff3";
+  };
+  "org.sonatype.sisu:sisu-inject-bean:pom::1.4.2" = {
+    url = "https://repo.maven.apache.org/maven2/org/sonatype/sisu/sisu-inject-bean/1.4.2/sisu-inject-bean-1.4.2.pom";
+    layout = "org/sonatype/sisu/sisu-inject-bean/1.4.2/sisu-inject-bean-1.4.2.pom";
+    sha256 = "06d75dd6f2a0dc9ea6bf73a67491ba4790f92251c654bf4925511e5e4f48f1df";
 ```
 
 You can then use this to download all the necessary dependencies to run your application.
@@ -57,20 +57,23 @@ $ tree /nix/store/2ps43297g5nii2k15kfy8z46fam51d8x-buildMavenRepository | head
 
 ```nix
 { pkgs ? import <nixpkgs> {} }:
-  let buildMavenRepository = import (
-      fetchTarball https://github.com/fzakaria/mvn2nix/archive/master.tar.gz
-    ).buildMavenRepository;
+let
+  mvn2nix = import
+    (fetchTarball "https://github.com/fzakaria/mvn2nix/archive/add-pom.tar.gz")
+    { };
+  buildMavenRepository = mvn2nix.buildMavenRepository;
   mavenRepository = buildMavenRepository { dependencies = import ./dependencies.nix; };
-inherit (pkgs) lib stdenv;
+inherit (pkgs) lib stdenv jdk11_headless maven makeWrapper;
 inherit (stdenv) mkDerivation;
 in mkDerivation rec {
-  pname = "my-dummy-derivation";
+  pname = "my-artifact";
   version = "0.01";
   name = "${pname}-${version}";
   src = lib.cleanSource ./.;
 
   buildInputs = [ jdk11_headless maven makeWrapper ];
   buildPhase = ''
+    echo "Building with maven repository ${mavenRepository}"
     mvn package --offline -Dmaven.repo.local=${mavenRepository}
   '';
 
@@ -94,6 +97,16 @@ in mkDerivation rec {
 }
 ```
 
+## How does it work?
+
+**mvn2nix** relies on [maven-invoker](https://maven.apache.org/shared/maven-invoker/); which fires off
+Maven in a separate JVM process.
+
+Maven is executed with a temporary *ephemeral* local repository for the given goals provided (defaults to **package**).
+The local repository is than traversed, and each encountered file is recorded in the dependencies list.
+
+**mvn2nix** includes an [example](examples/mvn2nix/default.nix) output & derivation that builds itself!
+
 ## Development
 
 If you are running *mvn2nix* from this repository, you can do so with **nix-build**
@@ -101,7 +114,7 @@ If you are running *mvn2nix* from this repository, you can do so with **nix-buil
 ```bash
 $ nix-build
 
-./result/bin/mvn2nix > dependencies.nix
+./result/bin/mvn2nix > example/dependencies.nix
 ```
 
 If you want to test **buildMavenRepository** you can run:

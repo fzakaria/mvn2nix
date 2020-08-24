@@ -1,33 +1,31 @@
 package com.fzakaria.mvn2nix.cmd;
 
+import com.fzakaria.mvn2nix.maven.Artifact;
+import com.fzakaria.mvn2nix.maven.Maven;
 import com.fzakaria.mvn2nix.model.MavenArtifact;
 import com.fzakaria.mvn2nix.model.MavenNixInformation;
 import com.fzakaria.mvn2nix.model.PrettyPrintNixVisitor;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
 import com.google.common.io.ByteStreams;
-import org.eclipse.aether.repository.RemoteRepository;
-import org.jboss.shrinkwrap.resolver.api.maven.*;
-import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenCoordinate;
-import org.jboss.shrinkwrap.resolver.impl.maven.MavenWorkingSessionContainer;
-import org.jboss.shrinkwrap.resolver.impl.maven.MavenWorkingSessionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
+import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.List;
+import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 @Command(name = "mvn2nix", mixinStandardHelpOptions = true, version = "mvn2nix 0.1",
         description = "Converts Maven dependencies into a Nix expression.")
@@ -39,71 +37,64 @@ public class Maven2nix implements Callable<Integer> {
     LoggingMixin loggingMixin;
 
     @Parameters(index = "0", paramLabel = "FILE", description = "The pom file to traverse.", defaultValue = "pom.xml")
-    private File file;
+    private File file = null;
+
+    @Option(names = "--goals",
+            description = "The goals to execute for maven to collect dependencies. Defaults to ${DEFAULT-VALUE}",
+            defaultValue = "package")
+    private String[] goals;
+
+    @Option(names = "--repositories",
+            description = "The maven repositories to try fetching artifacts from. Defaults to ${DEFAULT-VALUE}",
+            defaultValue = "https://repo.maven.apache.org/maven2/")
+    private String[] repositories;
+
+    public Maven2nix() {
+    }
 
     @Override
     public Integer call() throws Exception {
-        /*
-         * Fetch the pom.xml that is relative to current directory.
-         */
-        final File pomFile = file;
+        LOGGER.info("Reading {}", file);
 
-        LOGGER.info("Reading {}", pomFile);
+        final Maven maven = Maven.withTemporaryLocalRepository();
+        maven.executeGoals(file, goals);
 
-        final MavenResolverSystem resolver = Maven.resolver();
-        /*
-         * Resolve the pom.xml
-         */
-        final MavenResolvedArtifact[] artifacts = resolver
-                .loadPomFromFile(pomFile)
-                // TODO: Consider making this a CLI argument
-                //       consumers may not want to have system scopes
-                .importDependencies(ScopeType.values())
-                .resolve()
-                .withTransitivity()
-                .asResolvedArtifact();
+        Collection<Artifact> artifacts = maven.collectAllArtifactsInLocalRepository();
+        Map<String, MavenArtifact> dependencies = artifacts.parallelStream()
+                .collect(Collectors.toMap(
+                            Artifact::getCanonicalName,
+                            artifact -> {
+                                for (String repository : repositories) {
+                                    URL url = getRepositoryArtifactUrl(artifact, repository);
+                                    if (!doesUrlExist(url)) {
+                                        continue;
+                                    }
+                                    String sha256 = getSha256OfUrl(url);
+                                    return new MavenArtifact(url, artifact.getLayout(), sha256);
+                                }
+                                throw new RuntimeException(String.format("Could not find artifact %s in any repository", artifact));
+                            }
+                        ));
 
-        /*
-         * Peek inside and get the RemoteRepositories
-         */
-        MavenWorkingSessionImpl session = (MavenWorkingSessionImpl) ((MavenWorkingSessionContainer) resolver).getMavenWorkingSession();
-        final List<RemoteRepository> repositories = getRemoteRepositories(session);
 
-        final MavenNixInformation information = new MavenNixInformation();
-
-        /*
-         * Go through every artifact
-         */
-        for (MavenArtifactInfo artifact : artifacts) {
-
-            String canonical = artifact.getCoordinate().toCanonicalForm();
-
-            String layout = getMavenCalculatedLayout(artifact.getCoordinate());
-
-            String scope = artifact.getScope().toString();
-
-            /*
-             * Find a valid URL for the artifact
-             */
-            URL url = repositories.stream()
-                    .map(repository -> getRepositoryArtifactUrl(artifact, repository))
-                    .filter(Maven2nix::doesUrlExist)
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException(artifact + " could not be found in any repository."));
-
-            String sha256 = getSha256OfUrl(url);
-
-            LOGGER.info("Resolved {} - {} - {}", canonical, url, sha256);
-
-            information.addDependency(canonical, new MavenArtifact(url, layout, sha256, scope) );
-        }
-
+        final MavenNixInformation information = new MavenNixInformation(dependencies);
         PrettyPrintNixVisitor visitor = new PrettyPrintNixVisitor(System.out);
         information.accept(visitor);
 
         return 0;
     }
 
+    public static URL getRepositoryArtifactUrl(Artifact artifact, String repository) {
+        String url = repository;
+        if (!url.endsWith("/")) {
+            url += "/";
+        }
+        try {
+            return new URL(url + artifact.getLayout());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Could not contact repository: " + url);
+        }
+    }
 
     public static String getSha256OfUrl(URL url) {
         try {
@@ -119,8 +110,10 @@ public class Maven2nix implements Callable<Integer> {
 
             int code = connection.getResponseCode();
             if (code >= 400) {
-                throw new RuntimeException("Getching the url failed with status code: " + code);
+                throw new RuntimeException("Fetching the url failed with status code: " + code);
             }
+
+            LOGGER.info("calculating sha256 for {}", url);
 
             final HashingInputStream inputStream = new HashingInputStream(Hashing.sha256(), connection.getInputStream());
             ByteStreams.exhaust(inputStream);
@@ -131,22 +124,9 @@ public class Maven2nix implements Callable<Integer> {
         }
     }
 
-    public static URL getRepositoryArtifactUrl(MavenArtifactInfo artifact, RemoteRepository repository) {
-        String url = repository.getUrl();
-
-        if (!url.endsWith("/")) {
-            url += "/";
-        }
-
-        try {
-            return new URL(url + getMavenCalculatedLayout(artifact.getCoordinate()));
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Could not contact repository: " + url);
-        }
-    }
-
     /**
      * Check whether a given URL
+     *
      * @param url The URL for the pom file.
      * @return
      */
@@ -172,28 +152,4 @@ public class Maven2nix implements Callable<Integer> {
         return false;
     }
 
-    public static String getMavenCalculatedLayout(MavenCoordinate coordinate) {
-        String classifier = coordinate.getClassifier().isBlank() ? "" : "-" + coordinate.getClassifier();
-
-        return coordinate.getGroupId().replaceAll("\\.", "/")
-                + "/"
-                + coordinate.getArtifactId()
-                + "/"
-                + coordinate.getVersion()
-                + "/"
-                + coordinate.getArtifactId() + "-" + coordinate.getVersion()
-                + classifier
-                + "."
-                + coordinate.getType();
-    }
-
-    public static List<RemoteRepository> getRemoteRepositories(MavenWorkingSessionImpl session) {
-        try {
-            Method getRemoteRepositoriesMethod = session.getClass().getDeclaredMethod("getRemoteRepositories", null);
-            getRemoteRepositoriesMethod.setAccessible(true);
-            return (List<RemoteRepository>) getRemoteRepositoriesMethod.invoke(session, null);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

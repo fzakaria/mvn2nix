@@ -11,6 +11,10 @@ public class MavenNixInformation implements Model {
         this.dependencies = new HashMap<>();
     }
 
+    public MavenNixInformation(Map<String, MavenArtifact> dependencies) {
+        this.dependencies = new HashMap<>(dependencies);
+    }
+
     public void addDependency(String name, MavenArtifact artifact) {
         dependencies.put(name, artifact);
     }

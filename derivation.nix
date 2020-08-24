@@ -21,7 +21,7 @@ let
     '';
     outputHashAlgo = "sha256";
     outputHashMode = "recursive";
-    outputHash = "1nkc3nspzsgn84azmjj02dy6g2gwnq53jpfgr94vxqpa1awhi2kq";
+    outputHash = "1mkd03hwaviqzrs6gfaq6axnqbdv23i2jaclqr0nn5m7230g53im";
   };
 in mkDerivation rec {
   pname = "mvn2nix";
@@ -49,7 +49,9 @@ in mkDerivation rec {
     # create a wrapper that will automatically set the classpath
     # this should be the paths from the dependency derivation
     makeWrapper ${jdk11_headless}/bin/java $out/bin/${pname} \
-          --add-flags "-jar $out/${name}.jar"
+          --add-flags "-jar $out/${name}.jar" \
+          --set M2_HOME ${maven} \
+          --set JAVA_HOME ${jdk11_headless}
   '';
 
   meta = with stdenv.lib; {

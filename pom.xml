@@ -15,11 +15,24 @@
     </properties>
 
     <dependencies>
+        <!-- MAVEN START -->
+        <dependency>
+            <groupId>org.apache.maven.shared</groupId>
+            <artifactId>maven-invoker</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+        <!-- MAVEN END -->
         <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>4.5.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>29.0-jre</version>
+        </dependency>
+        <!-- LOGGING START -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -32,26 +45,16 @@
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-iostreams</artifactId>
+            <version>${log4j-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j18-impl</artifactId>
             <version>${log4j-version}</version>
             <scope>runtime</scope>
         </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>29.0-jre</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shrinkwrap.resolver</groupId>
-            <artifactId>shrinkwrap-resolver-depchain</artifactId>
-            <version>3.1.4</version>
-            <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shrinkwrap.resolver</groupId>
-            <artifactId>shrinkwrap-resolver-impl-maven</artifactId>
-            <version>3.1.4</version>
-        </dependency>
+        <!-- LOGGING END -->
     </dependencies>
 
     <build>

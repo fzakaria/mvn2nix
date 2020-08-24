@@ -14,7 +14,9 @@ public class PrintExceptionMessageHandler implements IExecutionExceptionHandler 
                                         ParseResult parseResult) {
 
         // bold red error message
-        cmd.getErr().println(cmd.getColorScheme().errorText(ex.getMessage()));
+        String message = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getName();
+
+        cmd.getErr().println(cmd.getColorScheme().errorText(message));
 
         if (((Maven2nix) (cmd.getCommandSpec().userObject())).loggingMixin.isVerboseEnabled()) {
             ex.printStackTrace();
