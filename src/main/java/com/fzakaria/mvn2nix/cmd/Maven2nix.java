@@ -39,7 +39,7 @@ public class Maven2nix implements Callable<Integer> {
     @Parameters(index = "0", paramLabel = "FILE", description = "The pom file to traverse.", defaultValue = "pom.xml")
     private File file = null;
 
-    @Option(names = "-goals", description = "The goals to execute for maven to collect dependencies.", defaultValue = "prepare-package")
+    @Option(names = "-goals", description = "The goals to execute for maven to collect dependencies.", defaultValue = "package")
     private String[] goals;
 
     @Option(names = "-repositories", description = "The maven repositories to try fetching artifacts from.", defaultValue = "https://repo.maven.apache.org/maven2/")
