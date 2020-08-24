@@ -2,6 +2,7 @@ package com.fzakaria.mvn2nix.maven;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.io.Resources;
 import org.apache.logging.log4j.io.IoBuilder;
 import org.apache.logging.log4j.io.LoggerPrintStream;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
@@ -11,14 +12,20 @@ import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.shared.invoker.PrintStreamHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -27,6 +34,8 @@ import java.util.stream.StreamSupport;
  * https://maven.apache.org/shared/maven-invoker/index.html
  */
 public class Maven {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Maven.class);
 
     private final Invoker invoker;
     private final File localRepository;
@@ -67,11 +76,39 @@ public class Maven {
         }
     }
 
+    /**
+     * Return the local File for the provided artifact if it exists.
+     * The ephemeral local repository is checked only.
+     * @param artifact
+     * @return
+     */
+    public Optional<File> findArtifactInLocalRepository(Artifact artifact) {
+        File file = localRepository.toPath().resolve(artifact.getLayout()).toFile();
+        if (!file.exists()) {
+            return Optional.empty();
+        }
+        return Optional.of(file);
+    }
+
     public void executeGoals(File pom, String... goals) throws MavenInvocationException {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setGoals(Lists.newArrayList(goals));
         request.setBatchMode(true);
         request.setPomFile(pom);
+
+        /*
+         * Load a custom settings.xml file that sets ~/.m2/repository as a remote repo.
+         * This will cut down drastically on the network calls to re-hydrate this temporary local repo.
+         */
+        try {
+            // we need to copy the resource file to somewhere on the filesystem
+            File tempResource = Files.createTempFile("mvn2nix-settings", "xml").toFile();
+            URL resource = Resources.getResource("settings.xml");
+            Resources.asByteSource(resource).copyTo(com.google.common.io.Files.asByteSink(tempResource));
+            request.setGlobalSettingsFile(tempResource);
+        } catch (IOException e) {
+            LOGGER.warn("Could not load custom settings.xml file.");
+        }
 
         InvocationResult result = this.invoker.execute(request);
         if (result.getExitCode() != 0) {
