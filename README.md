@@ -13,15 +13,15 @@ $ nix run -f https://github.com/fzakaria/mvn2nix/archive/master.tar.gz \
 
 $ head dependencies.nix
 {
-  "org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-impl-maven-archive:jar:3.1.4" = {
-    url = "https://repo.maven.apache.org/maven2/org/jboss/shrinkwrap/resolver/shrinkwrap-resolver-impl-maven-archive/3.1.4/shrinkwrap-resolver-impl-maven-archive-3.1.4.jar";
-    layout = "org/jboss/shrinkwrap/resolver/shrinkwrap-resolver-impl-maven-archive/3.1.4/shrinkwrap-resolver-impl-maven-archive-3.1.4.jar";
-    sha256 = "fec296a3b5a8e2cd6fcf8050f5b956f903d1251f901ac6ab8c0355c4e6b27a1c";
-    scope = "runtime";
+  "org.slf4j:jcl-over-slf4j:pom::1.5.6" = {
+    url = "https://repo.maven.apache.org/maven2/org/slf4j/jcl-over-slf4j/1.5.6/jcl-over-slf4j-1.5.6.pom";
+    layout = "org/slf4j/jcl-over-slf4j/1.5.6/jcl-over-slf4j-1.5.6.pom";
+    sha256 = "d71d7748e68bb9cb7ad38b95d17c0466e31fc1f4d15bb1e635f3ebad34a38ff3";
   };
-  "org.arquillian.spacelift:arquillian-spacelift:jar:1.0.2" = {
-    url = "https://repo.maven.apache.org/maven2/org/arquillian/spacelift/arquillian-spacelift/1.0.2/arquillian-spacelift-1.0.2.jar";
-    layout = "org/arquillian/spacelift/arquillian-spacelift/1.0.2/arquillian-spacelift-1.0.2.jar";
+  "org.sonatype.sisu:sisu-inject-bean:pom::1.4.2" = {
+    url = "https://repo.maven.apache.org/maven2/org/sonatype/sisu/sisu-inject-bean/1.4.2/sisu-inject-bean-1.4.2.pom";
+    layout = "org/sonatype/sisu/sisu-inject-bean/1.4.2/sisu-inject-bean-1.4.2.pom";
+    sha256 = "06d75dd6f2a0dc9ea6bf73a67491ba4790f92251c654bf4925511e5e4f48f1df";
 ```
 
 You can then use this to download all the necessary dependencies to run your application.
@@ -66,13 +66,14 @@ let
 inherit (pkgs) lib stdenv jdk11_headless maven makeWrapper;
 inherit (stdenv) mkDerivation;
 in mkDerivation rec {
-  pname = "my-dummy-derivation";
+  pname = "my-artifact";
   version = "0.01";
   name = "${pname}-${version}";
   src = lib.cleanSource ./.;
 
   buildInputs = [ jdk11_headless maven makeWrapper ];
   buildPhase = ''
+    echo "Building with maven repository ${mavenRepository}"
     mvn package --offline -Dmaven.repo.local=${mavenRepository}
   '';
 
@@ -96,6 +97,16 @@ in mkDerivation rec {
 }
 ```
 
+## How does it work?
+
+**mvn2nix** relies on [maven-invoker](https://maven.apache.org/shared/maven-invoker/); which fires off
+Maven in a separate JVM process.
+
+Maven is executed with a temporary *ephemeral* local repository for the given goals provided (defaults to **package**).
+The local repository is than traversed, and each encountered file is recorded in the dependencies list.
+
+**mvn2nix** includes an [example](./example/default.nix) output & derivation that builds itself!
+
 ## Development
 
 If you are running *mvn2nix* from this repository, you can do so with **nix-build**
@@ -103,7 +114,7 @@ If you are running *mvn2nix* from this repository, you can do so with **nix-buil
 ```bash
 $ nix-build
 
-./result/bin/mvn2nix > dependencies.nix
+./result/bin/mvn2nix > example/dependencies.nix
 ```
 
 If you want to test **buildMavenRepository** you can run:
