@@ -39,12 +39,12 @@ public class Maven2nix implements Callable<Integer> {
     @Parameters(index = "0", paramLabel = "FILE", description = "The pom file to traverse.", defaultValue = "pom.xml")
     private File file = null;
 
-    @Option(names = "-goals",
+    @Option(names = "--goals",
             description = "The goals to execute for maven to collect dependencies. Defaults to ${DEFAULT-VALUE}",
             defaultValue = "package")
     private String[] goals;
 
-    @Option(names = "-repositories",
+    @Option(names = "--repositories",
             description = "The maven repositories to try fetching artifacts from. Defaults to ${DEFAULT-VALUE}",
             defaultValue = "https://repo.maven.apache.org/maven2/")
     private String[] repositories;
@@ -57,7 +57,7 @@ public class Maven2nix implements Callable<Integer> {
         LOGGER.info("Reading {}", file);
 
         final Maven maven = Maven.withTemporaryLocalRepository();
-        maven.executeGoals(goals);
+        maven.executeGoals(file, goals);
 
         Collection<Artifact> artifacts = maven.collectAllArtifactsInLocalRepository();
         Map<String, MavenArtifact> dependencies = artifacts.parallelStream()

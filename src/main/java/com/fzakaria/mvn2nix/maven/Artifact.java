@@ -1,5 +1,7 @@
 package com.fzakaria.mvn2nix.maven;
 
+import com.google.common.base.Strings;
+
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -77,7 +79,10 @@ public class Artifact {
         final String[] parts = new String[] {
           group, name, extension, classifier, version
         };
-        return Stream.of(parts).filter(Objects::nonNull).collect(Collectors.joining(":"));
+        return Stream.of(parts)
+                .map(Strings::emptyToNull)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining(":"));
     }
 
     @Override

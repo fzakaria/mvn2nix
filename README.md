@@ -105,7 +105,7 @@ Maven in a separate JVM process.
 Maven is executed with a temporary *ephemeral* local repository for the given goals provided (defaults to **package**).
 The local repository is than traversed, and each encountered file is recorded in the dependencies list.
 
-**mvn2nix** includes an [example](./example/default.nix) output & derivation that builds itself!
+**mvn2nix** includes an [example](examples/mvn2nix/default.nix) output & derivation that builds itself!
 
 ## Development
 

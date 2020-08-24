@@ -67,10 +67,11 @@ public class Maven {
         }
     }
 
-    public void executeGoals(String... goals) throws MavenInvocationException {
+    public void executeGoals(File pom, String... goals) throws MavenInvocationException {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setGoals(Lists.newArrayList(goals));
         request.setBatchMode(true);
+        request.setPomFile(pom);
 
         InvocationResult result = this.invoker.execute(request);
         if (result.getExitCode() != 0) {
@@ -95,6 +96,8 @@ public class Maven {
                  .filter(f -> !f.endsWith("maven-metadata-local.xml"))
                  .filter(f -> !f.toFile().getName().endsWith("sha1"))
                  .filter(f -> !f.toFile().getName().equals("_remote.repositories"))
+                 .filter(f -> !f.toFile().getName().equals("resolver-status.properties"))
+                 .filter(f -> !f.toFile().getName().endsWith("lastUpdated"))
                  .map(file -> {
                      Path layout = localRepository.toPath().relativize(file);
 
