@@ -39,10 +39,14 @@ public class Maven2nix implements Callable<Integer> {
     @Parameters(index = "0", paramLabel = "FILE", description = "The pom file to traverse.", defaultValue = "pom.xml")
     private File file = null;
 
-    @Option(names = "-goals", description = "The goals to execute for maven to collect dependencies.", defaultValue = "package")
+    @Option(names = "-goals",
+            description = "The goals to execute for maven to collect dependencies. Defaults to ${DEFAULT-VALUE}",
+            defaultValue = "package")
     private String[] goals;
 
-    @Option(names = "-repositories", description = "The maven repositories to try fetching artifacts from.", defaultValue = "https://repo.maven.apache.org/maven2/")
+    @Option(names = "-repositories",
+            description = "The maven repositories to try fetching artifacts from. Defaults to ${DEFAULT-VALUE}",
+            defaultValue = "https://repo.maven.apache.org/maven2/")
     private String[] repositories;
 
     public Maven2nix() {
@@ -106,7 +110,7 @@ public class Maven2nix implements Callable<Integer> {
 
             int code = connection.getResponseCode();
             if (code >= 400) {
-                throw new RuntimeException("Getching the url failed with status code: " + code);
+                throw new RuntimeException("Fetching the url failed with status code: " + code);
             }
 
             LOGGER.info("calculating sha256 for {}", url);
