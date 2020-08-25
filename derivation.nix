@@ -1,10 +1,10 @@
-{ lib, stdenv, jdk11_headless, maven, makeWrapper, gitignoreSource }:
+{ lib, stdenv, jdk, maven, makeWrapper, gitignoreSource }:
 with stdenv;
 let
   version = "0.1";
   dependencies = mkDerivation {
     name = "mvn2nix-${version}-dependencies";
-    buildInputs = [ jdk11_headless maven ];
+    buildInputs = [ jdk maven ];
     src = gitignoreSource ./.;
     buildPhase = ''
       while mvn package -Dmaven.repo.local=$out/.m2 -Dmaven.wagon.rto=5000; [ $? = 1 ]; do
@@ -28,7 +28,7 @@ in mkDerivation rec {
   inherit version;
   name = "${pname}-${version}";
   src = gitignoreSource ./.;
-  buildInputs = [ jdk11_headless maven makeWrapper ];
+  buildInputs = [ jdk maven makeWrapper ];
   buildPhase = ''
     # 'maven.repo.local' must be writable so copy it out of nix store
     mvn package --offline -Dmaven.repo.local=${dependencies}/.m2
@@ -48,10 +48,10 @@ in mkDerivation rec {
 
     # create a wrapper that will automatically set the classpath
     # this should be the paths from the dependency derivation
-    makeWrapper ${jdk11_headless}/bin/java $out/bin/${pname} \
+    makeWrapper ${jdk}/bin/java $out/bin/${pname} \
           --add-flags "-jar $out/${name}.jar" \
           --set M2_HOME ${maven} \
-          --set JAVA_HOME ${jdk11_headless}
+          --set JAVA_HOME ${jdk}
   '';
 
   meta = with stdenv.lib; {
