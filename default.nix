@@ -1,6 +1,9 @@
+{
+  sources ? import ./nix/sources.nix,
+  nixpkgs ? sources.nixpkgs
+}:
 let
-  sources = import ./nix/sources.nix;
-  pkgs = import sources.nixpkgs {
+  pkgs = import nixpkgs {
     overlays = [
       (_: super: {
         niv = (import sources.niv { }).niv;
