@@ -1,7 +1,7 @@
 { pkgs ? import <nixpkgs> { } }:
 let
   mvn2nix = import
-    (fetchTarball "https://github.com/fzakaria/mvn2nix/archive/add-pom.tar.gz")
+    (fetchTarball "https://github.com/fzakaria/mvn2nix/archive/master.tar.gz")
     { };
   buildMavenRepository = mvn2nix.buildMavenRepository;
   mavenRepository =
