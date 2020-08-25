@@ -1,8 +1,12 @@
-# mvn2nix
+<p align="center">
+  <img src="logo.png" alt="mvn2nix" width="164" height="164">
+</p>
 
 ![Build](https://github.com/fzakaria/mvn2nix/workflows/Build/badge.svg)
 [![built with nix](https://builtwithnix.org/badge.svg)](https://builtwithnix.org)
 
+> Easily package your Maven Java application with the Nix package manager.
+>
 ## How to use this
 
 ### Generating the Nix dependencies file
