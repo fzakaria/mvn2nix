@@ -30,15 +30,15 @@ $ nix run -f https://github.com/fzakaria/mvn2nix/archive/master.tar.gz \
 
 $ head dependencies.nix
 {
-  "org.slf4j:jcl-over-slf4j:pom::1.5.6" = {
-    url = "https://repo.maven.apache.org/maven2/org/slf4j/jcl-over-slf4j/1.5.6/jcl-over-slf4j-1.5.6.pom";
-    layout = "org/slf4j/jcl-over-slf4j/1.5.6/jcl-over-slf4j-1.5.6.pom";
-    sha256 = "d71d7748e68bb9cb7ad38b95d17c0466e31fc1f4d15bb1e635f3ebad34a38ff3";
+  "junit:junit:pom:3.8.1" = {
+    url = "https://repo.maven.apache.org/maven2/junit/junit/3.8.1/junit-3.8.1.pom";
+    layout = "junit/junit/3.8.1/junit-3.8.1.pom";
+    sha256 = "e68f33343d832398f3c8aa78afcd808d56b7c1020de4d3ad8ce47909095ee904";
   };
-  "org.sonatype.sisu:sisu-inject-bean:pom::1.4.2" = {
-    url = "https://repo.maven.apache.org/maven2/org/sonatype/sisu/sisu-inject-bean/1.4.2/sisu-inject-bean-1.4.2.pom";
-    layout = "org/sonatype/sisu/sisu-inject-bean/1.4.2/sisu-inject-bean-1.4.2.pom";
-    sha256 = "06d75dd6f2a0dc9ea6bf73a67491ba4790f92251c654bf4925511e5e4f48f1df";
+  "org.sonatype.forge:forge-parent:pom:10" = {
+    url = "https://repo.maven.apache.org/maven2/org/sonatype/forge/forge-parent/10/forge-parent-10.pom";
+    layout = "org/sonatype/forge/forge-parent/10/forge-parent-10.pom";
+    sha256 = "c14fb9c32b59cc03251f609416db7c0cff01f811edcccb4f6a865d6e7046bd0b";
 ```
 
 You can then use this to download all the necessary dependencies to run your application.
