@@ -6,7 +6,19 @@
 [![built with nix](https://builtwithnix.org/badge.svg)](https://builtwithnix.org)
 
 > Easily package your Maven Java application with the Nix package manager.
->
+
+<!--ts-->
+      * [How to use this](#how-to-use-this)
+         * [Generating the Nix dependencies file](#generating-the-nix-dependencies-file)
+         * [Building a Maven repository](#building-a-maven-repository)
+         * [Sample Derivation](#sample-derivation)
+      * [How does it work?](#how-does-it-work)
+      * [Development](#development)
+
+<!-- Added by: fmzakari, at: Mon Aug 24 21:40:20 PDT 2020 -->
+
+<!--te-->
+
 ## How to use this
 
 ### Generating the Nix dependencies file
