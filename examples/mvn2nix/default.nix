@@ -1,8 +1,8 @@
 { pkgs ? import <nixpkgs> { } }:
 let
-  mvn2nix = import
-    (fetchTarball "https://github.com/fzakaria/mvn2nix/archive/master.tar.gz")
-    { };
+  # in a real scenario you would use
+  # fetchTarball "https://github.com/fzakaria/mvn2nix/archive/master.tar.gz"
+  mvn2nix = import ../.. { };
   buildMavenRepository = mvn2nix.buildMavenRepository;
   mavenRepository =
     buildMavenRepository { dependencies = import ./dependencies.nix; };
