@@ -56,7 +56,7 @@ public class Artifact {
 
     /**
      * Gets the maven repository layout for this artifact
-     * @return
+         * @return
      */
     public String getLayout() {
         return group.replaceAll("\\.", "/")
@@ -93,6 +93,38 @@ public class Artifact {
     @Override
     public String toString() {
         return getCanonicalName();
+    }
+
+    /**
+     * Convert a canonical artifact name into an {@link Artifact}
+     * ex. org.apache.commons:commons-parent:pom:22
+     */
+    public static Artifact fromCanonical(String canonical) {
+        String[] parts = canonical.split(":");
+        switch(parts.length) {
+            case 5: {
+                return Artifact
+                        .builder()
+                        .setGroup(parts[0])
+                        .setName(parts[1])
+                        .setExtension(parts[2])
+                        .setClassifier(parts[3])
+                        .setVersion(parts[4])
+                        .build();
+            }
+            case 4: {
+                return Artifact
+                        .builder()
+                        .setGroup(parts[0])
+                        .setName(parts[1])
+                        .setExtension(parts[2])
+                        .setVersion(parts[3])
+                        .build();
+            }
+            default: {
+                throw new IllegalArgumentException(String.format("%s is not a valid canonical name.", canonical));
+            }
+        }
     }
 
     public static Builder builder() {
