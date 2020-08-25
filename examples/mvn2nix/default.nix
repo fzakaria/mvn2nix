@@ -15,7 +15,7 @@ in mkDerivation rec {
 
   # we set the source directory one level higher
   # this is just for this example
-  src = lib.cleanSource ../.;
+  src = lib.cleanSource ../../.;
 
   buildInputs = [ jdk11_headless maven makeWrapper ];
   buildPhase = ''
