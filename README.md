@@ -19,6 +19,13 @@
 
 ## How to use this
 
+```bash
+$ nix run -f https://github.com/fzakaria/mvn2nix/archive/master.tar.gz --command mvn2nix
+```
+
+If you have [cachix](https://cachix.org/) installed, you can leverage our prebuilt binary.
+> cachix use fzakaria
+
 ### Generating the Nix dependencies file
 
 In the same spirit of [bundix](https://github.com/nix-community/bundix), **mvn2nix** creates a Nix set with the
