@@ -6,12 +6,10 @@ import java.util.Map;
 public class MavenNixInformation implements Model {
 
     public final Map<String, MavenArtifact> dependencies;
+    public final Project project;
 
-    public MavenNixInformation() {
-        this.dependencies = new HashMap<>();
-    }
-
-    public MavenNixInformation(Map<String, MavenArtifact> dependencies) {
+    public MavenNixInformation(Project project, Map<String, MavenArtifact> dependencies) {
+        this.project = project;
         this.dependencies = new HashMap<>(dependencies);
     }
 

@@ -16,4 +16,6 @@ in {
   mvn2nix = pkgs.mvn2nix;
 
   buildMavenRepository = pkgs.buildMavenRepository;
+
+  buildMaven = pkgs.buildMaven;
 }

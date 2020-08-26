@@ -5,8 +5,11 @@ import com.fzakaria.mvn2nix.maven.Maven;
 import com.fzakaria.mvn2nix.model.MavenArtifact;
 import com.fzakaria.mvn2nix.model.MavenNixInformation;
 import com.fzakaria.mvn2nix.model.PrettyPrintNixVisitor;
+import com.fzakaria.mvn2nix.model.Project;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -18,6 +21,7 @@ import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Spec;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
@@ -85,8 +89,15 @@ public class Maven2nix implements Callable<Integer> {
                             }
                         ));
 
+        /*
+         * Lets parse the pom.xml file now
+         * We do this so we can augment the dependencies file with information about when it was generated.
+         */
+        MavenXpp3Reader reader = new MavenXpp3Reader();
+        Model model = reader.read(new FileReader("pom.xml"));
+        Project project = new Project(model.getGroupId(), model.getArtifactId(), model.getVersion());
 
-        final MavenNixInformation information = new MavenNixInformation(dependencies);
+        final MavenNixInformation information = new MavenNixInformation(project, dependencies);
         PrettyPrintNixVisitor visitor = new PrettyPrintNixVisitor(spec.commandLine().getOut());
         information.accept(visitor);
 
