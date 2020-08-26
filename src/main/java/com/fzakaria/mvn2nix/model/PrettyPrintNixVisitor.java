@@ -27,18 +27,27 @@ public class PrettyPrintNixVisitor implements Visitor {
     @Override
     public void visit(MavenNixInformation info) {
         writeln("{");
-        for (Map.Entry<String, MavenArtifact> entry : info.dependencies.entrySet()) {
-            String name = entry.getKey();
-            MavenArtifact artifact = entry.getValue();
-
+        indent(() -> {
+            writeln("project = {");
+            indent(() -> info.project.accept(this));
+            writeln("};");
+            writeln("dependencies = {");
             indent(() -> {
-                writeln("\"%s\" = {", name);
-                indent(() -> {
-                    artifact.accept(this);
-                });
-                writeln("};");
+                for (Map.Entry<String, MavenArtifact> entry : info.dependencies.entrySet()) {
+                    String name = entry.getKey();
+                    MavenArtifact artifact = entry.getValue();
+
+                    indent(() -> {
+                        writeln("\"%s\" = {", name);
+                        indent(() -> {
+                            artifact.accept(this);
+                        });
+                        writeln("};");
+                    });
+                }
             });
-        }
+            writeln("};");
+        });
         writeln("}");
     }
 
@@ -47,6 +56,13 @@ public class PrettyPrintNixVisitor implements Visitor {
         writeln("url = \"%s\";", artifact.url);
         writeln("layout = \"%s\";", artifact.layout);
         writeln("sha256 = \"%s\";", artifact.sha256);
+    }
+
+    @Override
+    public void visit(Project project) {
+        writeln("group = \"%s\";", project.group);
+        writeln("name = \"%s\";", project.name);
+        writeln("version = \"%s\";", project.version);
     }
 
     private void indent(Runnable run) {
