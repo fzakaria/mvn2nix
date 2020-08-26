@@ -77,47 +77,30 @@ $ tree /nix/store/2ps43297g5nii2k15kfy8z46fam51d8x-buildMavenRepository | head
 │       │   └── error_prone_annotations
 ```
 
-### Sample Derivation
+### Building a runnable JAR
 
+If your project is an executable JAR; you can easily use the `buildMaven` derivation
+to create a simple runnable JAR; which has all the necessary dependencies available on the
+classpath
+
+Here is the example that builds _this project_! You can also find it [here](./examples/mvn2nix/default.nix).
 ```nix
 { pkgs ? import <nixpkgs> {} }:
 let
   mvn2nix = import
-    (fetchTarball "https://github.com/fzakaria/mvn2nix/archive/add-pom.tar.gz")
+    (fetchTarball "https://github.com/fzakaria/mvn2nix/archive/master.tar.gz")
     { };
   buildMavenRepository = mvn2nix.buildMavenRepository;
-  mavenRepository = buildMavenRepository { dependencies = import ./dependencies.nix; };
-inherit (pkgs) lib stdenv jdk11_headless maven makeWrapper;
-inherit (stdenv) mkDerivation;
-in mkDerivation rec {
-  pname = "my-artifact";
-  version = "0.01";
-  name = "${pname}-${version}";
-  src = lib.cleanSource ./.;
-
-  buildInputs = [ jdk11_headless maven makeWrapper ];
-  buildPhase = ''
-    echo "Building with maven repository ${mavenRepository}"
-    mvn package --offline -Dmaven.repo.local=${mavenRepository}
-  '';
-
-  installPhase = ''
-    # create the bin directory
-    mkdir -p $out/bin
-
-    # create a symbolic link for the lib directory
-    ln -s ${mavenRepository}/.m2 $out/lib
-
-    # copy out the JAR
-    # Maven already setup the classpath to use m2 repository layout
-    # with the prefix of lib/
-    cp target/${name}.jar $out/
-
-    # create a wrapper that will automatically set the classpath
-    # this should be the paths from the dependency derivation
-    makeWrapper ${jdk11_headless}/bin/java $out/bin/${pname} \
-          --add-flags "-jar $out/${name}.jar"
-  '';
+  buildMaven = mvn2nix.buildMaven;
+  mavenRepository =
+    buildMavenRepository { generated = import ./dependencies.nix; };
+in buildMaven {
+  jdk = pkgs.jdk11_headless;
+  generated = import ./dependencies.nix;
+  repository = mavenRepository;
+  # we set the source directory one level higher
+  # this is just for this example
+  src = ./.;
 }
 ```
 
