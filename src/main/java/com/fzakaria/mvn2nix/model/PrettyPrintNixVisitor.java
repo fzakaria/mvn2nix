@@ -1,6 +1,6 @@
 package com.fzakaria.mvn2nix.model;
 
-import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.Map;
 
 /*
@@ -12,7 +12,7 @@ public class PrettyPrintNixVisitor implements Visitor {
     public static final int DEFAULT_INDENTATION_SIZE = 2;
     private static final char DEFAULT_INDENTATION_CHAR = ' ';
 
-    private final PrintStream stream;
+    private final PrintWriter writer;
 
     private final int indentationSize = DEFAULT_INDENTATION_SIZE;
     private final char indentationChar = DEFAULT_INDENTATION_CHAR;
@@ -20,8 +20,8 @@ public class PrettyPrintNixVisitor implements Visitor {
     // the current indentation we are at
     private int indent = 0;
 
-    public PrettyPrintNixVisitor(PrintStream stream) {
-        this.stream = stream;
+    public PrettyPrintNixVisitor(PrintWriter writer) {
+        this.writer = writer;
     }
 
     @Override
@@ -55,15 +55,15 @@ public class PrettyPrintNixVisitor implements Visitor {
         indent -= 1;
     }
 
-    private void write(final String format, Object... args){
+    private void write(final String format, Object... args) {
         for(int i = 0; i < (indent * indentationSize); i++){
-            stream.append(indentationChar);
+            writer.print(indentationChar);
         }
-        stream.append(String.format(format, args));
+        writer.printf(format, args);
     }
 
     private void writeln(final String format, Object... args) {
         write(format, args);
-        stream.append('\n');
+        writer.println("");
     }
 }

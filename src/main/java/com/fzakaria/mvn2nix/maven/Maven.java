@@ -3,6 +3,7 @@ package com.fzakaria.mvn2nix.maven;
 import com.fzakaria.mvn2nix.util.Resources;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.io.IoBuilder;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.DefaultInvoker;
@@ -51,7 +52,7 @@ public class Maven {
 
         // send all of maven's output to log4j2 which goes to STDERR
         PrintStreamHandler handler = new PrintStreamHandler(
-                IoBuilder.forLogger("maven-invoker").setAutoFlush(true).buildPrintStream(),
+                IoBuilder.forLogger("maven-invoker").setLevel(Level.INFO).setAutoFlush(true).buildPrintStream(),
                 true
         );
 

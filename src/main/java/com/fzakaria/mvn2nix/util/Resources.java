@@ -17,8 +17,8 @@ public final class Resources {
      */
     public static File export(String resourceName) {
         try {
-            URL resource = com.google.common.io.Resources.getResource("settings.xml");
-            File tempResource = Files.createTempFile(resourceName, null).toFile();
+            URL resource = com.google.common.io.Resources.getResource(resourceName);
+            File tempResource = Files.createTempFile("exported", null).toFile();
             com.google.common.io.Resources.asByteSource(resource).copyTo(com.google.common.io.Files.asByteSink(tempResource));
             return tempResource;
         } catch (IOException e) {
