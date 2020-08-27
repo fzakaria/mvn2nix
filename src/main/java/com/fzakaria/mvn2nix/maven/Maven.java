@@ -133,6 +133,8 @@ public class Maven {
                  .filter(f -> !f.toFile().getName().equals("_remote.repositories"))
                  .filter(f -> !f.toFile().getName().equals("resolver-status.properties"))
                  .filter(f -> !f.toFile().getName().endsWith("lastUpdated"))
+                 .filter(f -> !f.toFile().getName().endsWith("asc"))
+                 .filter(f -> !f.toFile().getName().endsWith("unpacked"))
                  .map(file -> {
                      Path layout = localRepository.toPath().relativize(file);
 
