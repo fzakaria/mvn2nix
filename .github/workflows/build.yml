@@ -14,6 +14,6 @@ jobs:
       with:
         name: fzakaria
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-    - run: nix-build
+    - run: nix-build -A mvn2nix
     - run: ./result/bin/mvn2nix > dependencies.nix
     - run: nix-build -A buildMavenRepository --arg dependencies "import ./dependencies.nix"
