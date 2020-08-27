@@ -28,7 +28,7 @@ in mkDerivation rec {
     mkdir -p $out/bin
 
     # create a symbolic link for the lib directory
-    ln -s ${mavenRepository}/.m2 $out/lib
+    ln -s ${mavenRepository} $out/lib
 
     # copy out the JAR
     # Maven already setup the classpath to use m2 repository layout

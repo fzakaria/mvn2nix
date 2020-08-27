@@ -13,7 +13,9 @@ let
     ];
   };
 in {
-  mvn2nix = pkgs.mvn2nix;
+  mvn2nix = pkgs.mvn2nix-jdk11;
+  mvn2nix-jdk11 = pkgs.mvn2nix-jdk11;
+  mvn2nix-jdk8 = pkgs.mvn2nix-jdk8;
 
   buildMavenRepository = pkgs.buildMavenRepository;
 }

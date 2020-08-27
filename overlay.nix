@@ -1,7 +1,17 @@
 self: super: {
-  jdk = super.jdk11_headless;
+  maven-jdk11 = super.maven.override { jdk = super.jdk11; };
 
-  mvn2nix = self.callPackage ./derivation.nix { };
+  maven-jdk8 = super.maven.override { jdk = super.jdk8; };
+
+  mvn2nix-jdk8 = self.callPackage ./derivation.nix {
+    jdk = super.jdk8;
+    maven = self.maven-jdk8;
+  };
+
+  mvn2nix-jdk11 = self.callPackage ./derivation.nix {
+    jdk = super.jdk11;
+    maven = self.maven-jdk11;
+  };
 
   buildMavenRepository = self.callPackage ./maven.nix { };
 }

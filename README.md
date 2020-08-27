@@ -26,6 +26,13 @@ $ nix run -f https://github.com/fzakaria/mvn2nix/archive/master.tar.gz --command
 If you have [cachix](https://cachix.org/) installed, you can leverage our prebuilt binary.
 > cachix use fzakaria
 
+If your build builds only with **Java8** (the deafult is Java11); you can execute the alternative
+*mvn2nix* attribute.
+
+```bash
+$ nix run -f https://github.com/fzakaria/mvn2nix/archive/master.tar.gz mvn2nix-jdk8 --command mvn2nix
+```
+
 ### Generating the Nix dependencies file
 
 In the same spirit of [bundix](https://github.com/nix-community/bundix), **mvn2nix** creates a Nix set with the
