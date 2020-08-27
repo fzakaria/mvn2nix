@@ -1,4 +1,4 @@
-{ lib, stdenv, jdk11, maven, makeWrapper, gitignoreSource, maven-jdk11 }:
+{ lib, stdenv, jdk, jdk11, maven, makeWrapper, gitignoreSource, maven-jdk11 }:
 with stdenv;
 let
   version = "0.1";
@@ -50,7 +50,8 @@ in mkDerivation rec {
     # this should be the paths from the dependency derivation
     makeWrapper ${jdk11}/bin/java $out/bin/${pname} \
           --add-flags "-jar $out/${name}.jar" \
-          --set M2_HOME ${maven}
+          --set M2_HOME ${maven} \
+          --set JAVA_HOME ${jdk}
   '';
 
   meta = with stdenv.lib; {
