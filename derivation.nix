@@ -1,37 +1,16 @@
-{ lib, stdenv, jdk, maven, makeWrapper, gitignoreSource }:
-with stdenv;
+{ lib, stdenv, jdk, maven, makeWrapper, gitignoreSource
+, buildMavenRepositoryFromLockFile }:
 let
-  version = "0.1";
-  dependencies = mkDerivation {
-    name = "mvn2nix-${version}-dependencies";
-    buildInputs = [ jdk maven ];
-    src = gitignoreSource ./.;
-    buildPhase = ''
-      while mvn package -Dmaven.repo.local=$out/.m2 -Dmaven.wagon.rto=5000; [ $? = 1 ]; do
-        echo "timeout, restart maven to continue downloading"
-      done
-    '';
-    # keep only *.{pom,jar,sha1,nbm} and delete all ephemeral files with lastModified timestamps inside
-    installPhase = ''
-      find $out/.m2 -type f \
-        -name \*.lastUpdated -or \
-        -name resolver-status.properties -or \
-        -name _remote.repositories \
-        -delete
-    '';
-    outputHashAlgo = "sha256";
-    outputHashMode = "recursive";
-    outputHash = "0gq60z02vrrmpvr5ygrwp7f8myrfyrxkdr02lpprml0bvwzndzld";
-  };
-in mkDerivation rec {
+  repository = buildMavenRepositoryFromLockFile { file = ./mvn2nix-lock.json; };
+in stdenv.mkDerivation rec {
   pname = "mvn2nix";
-  inherit version;
+  version = "0.1";
   name = "${pname}-${version}";
   src = gitignoreSource ./.;
   buildInputs = [ jdk maven makeWrapper ];
   buildPhase = ''
     # 'maven.repo.local' must be writable so copy it out of nix store
-    mvn package --offline -Dmaven.repo.local=${dependencies}/.m2
+    mvn package --offline -Dmaven.repo.local=${repository}
   '';
 
   installPhase = ''
@@ -39,7 +18,7 @@ in mkDerivation rec {
     mkdir -p $out/bin
 
     # create a symbolic link for the lib directory
-    ln -s ${dependencies}/.m2 $out/lib
+    ln -s ${repository} $out/lib
 
     # copy out the JAR
     # Maven already setup the classpath to use m2 repository layout

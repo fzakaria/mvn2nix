@@ -59,7 +59,7 @@ Now that you have a **nix** dependencies file; we can re-construct a Maven repos
 ```nix
 let mvn2nix = import (fetchTarball https://github.com/fzakaria/mvn2nix/archive/master.tar.gz) { };
 in
-mvn2nix.buildMavenRepositoryFromLockFile ./mvn2nix-lock.json
+mvn2nix.buildMavenRepositoryFromLockFile { file = ./mvn2nix-lock.json; }
 ```
 
 This creates a **/nix/store** path which is a Maven repository that can be used, such as in `mvn package --offline -Dmaven.repo.local=${mavenRepository}`
@@ -85,11 +85,11 @@ $ tree /nix/store/0ylsqi62jqz5gqf0dqrz5a3hj3jrzrwx-mvn2nix-repository | head
 { pkgs ? import <nixpkgs> {} }:
 let
   mvn2nix = import
-    (fetchTarball "https://github.com/fzakaria/mvn2nix/archive/add-pom.tar.gz")
+    (fetchTarball "https://github.com/fzakaria/mvn2nix/archive/master.tar.gz")
     { };
   buildMavenRepositoryFromLockFile = mvn2nix.buildMavenRepositoryFromLockFile;
   mavenRepository =
-    buildMavenRepositoryFromLockFile ./mvn2nix-lock.json;
+   buildMavenRepositoryFromLockFile { file = ./mvn2nix-lock.json; };
 inherit (pkgs) lib stdenv jdk11_headless maven makeWrapper;
 inherit (stdenv) mkDerivation;
 in mkDerivation rec {
@@ -146,5 +146,5 @@ $ nix-build
 
 If you want to test **buildMavenRepository** you can run:
 ```bash
-$ nix-build -A buildMavenRepositoryFromLockFile --arg "./mvn2nix-lock.json"
+$ nix-build -A buildMavenRepositoryFromLockFile --arg file "./mvn2nix-lock.json"
 ```
