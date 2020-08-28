@@ -15,6 +15,8 @@ let
 in {
   mvn2nix = pkgs.mvn2nix;
 
+  mvn2nix-bootstrap = pkgs.mvn2nix-bootstrap;
+
   buildMavenRepository = pkgs.buildMavenRepository;
 
   buildMavenRepositoryFromLockFile = pkgs.buildMavenRepositoryFromLockFile;
