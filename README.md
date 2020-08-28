@@ -90,9 +90,8 @@ let
   mvn2nix = import
     (fetchTarball "https://github.com/fzakaria/mvn2nix/archive/master.tar.gz")
     { };
-  buildMavenRepositoryFromLockFile = mvn2nix.buildMavenRepositoryFromLockFile;
   mavenRepository =
-   buildMavenRepositoryFromLockFile { file = ./mvn2nix-lock.json; };
+   mvn2nix.buildMavenRepositoryFromLockFile { file = ./mvn2nix-lock.json; };
 inherit (pkgs) lib stdenv jdk11_headless maven makeWrapper;
 inherit (stdenv) mkDerivation;
 in mkDerivation rec {
@@ -112,7 +111,7 @@ in mkDerivation rec {
     mkdir -p $out/bin
 
     # create a symbolic link for the lib directory
-    ln -s ${mavenRepository}/.m2 $out/lib
+    ln -s ${mavenRepository} $out/lib
 
     # copy out the JAR
     # Maven already setup the classpath to use m2 repository layout
