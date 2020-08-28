@@ -5,7 +5,7 @@ let
   mvn2nix = import ../.. { };
   buildMavenRepositoryFromLockFile = mvn2nix.buildMavenRepositoryFromLockFile;
   mavenRepository =
-    buildMavenRepositoryFromLockFile ./mvn2nix-lock.json;
+    buildMavenRepositoryFromLockFile { file = ./mvn2nix-lock.json; };
   inherit (pkgs) lib stdenv jdk11_headless maven makeWrapper;
   inherit (stdenv) mkDerivation;
 in mkDerivation rec {

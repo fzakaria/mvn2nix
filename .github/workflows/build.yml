@@ -16,4 +16,4 @@ jobs:
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
     - run: nix-build
     - run: ./result/bin/mvn2nix > mvn2nix-lock.json
-    - run: nix-build -A buildMavenRepositoryFromLockFile --arg "./mvn2nix-lock.json"
+    - run: nix-build -A buildMavenRepositoryFromLockFile --arg file "./mvn2nix-lock.json"

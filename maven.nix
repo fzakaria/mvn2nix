@@ -7,7 +7,7 @@ with lib; rec {
   # 	mvn package --offline -Dmaven.repo.local=${repository}
   #
   # @param dependencies: A attrset of dependencies to build the repository
-  buildMavenRepository = dependencies:
+  buildMavenRepository = { dependencies }:
     let
       dependenciesAsDrv = (forEach (attrValues dependencies) (dependency: {
         drv = fetchurl {
@@ -28,7 +28,8 @@ with lib; rec {
   # 	mvn package --offline -Dmaven.repo.local=${repository}
   #
   # @param file: A path to a file containing the JSON output of running mvn2nix
-  buildMavenRepositoryFromLockFile = file:
-    buildMavenRepository
-    (builtins.fromJSON (builtins.readFile file)).dependencies;
+  buildMavenRepositoryFromLockFile = { file }:
+    let
+      dependencies = (builtins.fromJSON (builtins.readFile file)).dependencies;
+    in buildMavenRepository { inherit dependencies; };
 }
