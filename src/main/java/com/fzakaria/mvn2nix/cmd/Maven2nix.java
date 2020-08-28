@@ -46,11 +46,13 @@ public class Maven2nix implements Callable<Integer> {
     private File file = null;
 
     @Option(names = "--goals",
+            arity = "0..*",
             description = "The goals to execute for maven to collect dependencies. Defaults to ${DEFAULT-VALUE}",
             defaultValue = "package")
     private String[] goals;
 
     @Option(names = "--repositories",
+            arity = "0..*",
             description = "The maven repositories to try fetching artifacts from. Defaults to ${DEFAULT-VALUE}",
             defaultValue = "https://repo.maven.apache.org/maven2/")
     private String[] repositories;
