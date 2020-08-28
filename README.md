@@ -18,7 +18,7 @@
 <!--te-->
 
 __:warning: mvn2nix is in active development but is ready to be used. Please pin it to a commit to avoid
-   any flux__
+   any flux.__
 
 ## How to use this
 
