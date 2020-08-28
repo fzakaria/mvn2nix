@@ -33,7 +33,7 @@ public class Maven2NixIT {
         cmd.execute(pom.getPath());
 
         String expected = com.google.common.io.Resources.toString(
-                com.google.common.io.Resources.getResource("samples/basic/dependencies.nix"),
+                com.google.common.io.Resources.getResource("samples/basic/mvn2nix-lock.json"),
                 StandardCharsets.UTF_8);
         String actual = sw.getBuffer().toString();
         assertThat(actual).isEqualToIgnoringNewLines(expected);

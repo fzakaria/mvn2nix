@@ -3,9 +3,9 @@ let
   # in a real scenario you would use
   # fetchTarball "https://github.com/fzakaria/mvn2nix/archive/master.tar.gz"
   mvn2nix = import ../.. { };
-  buildMavenRepository = mvn2nix.buildMavenRepository;
+  buildMavenRepositoryFromLockFile = mvn2nix.buildMavenRepositoryFromLockFile;
   mavenRepository =
-    buildMavenRepository { dependencies = import ./dependencies.nix; };
+    buildMavenRepositoryFromLockFile { file = ./mvn2nix-lock.json; };
   inherit (pkgs) lib stdenv jdk11_headless maven makeWrapper;
   inherit (stdenv) mkDerivation;
 in mkDerivation rec {

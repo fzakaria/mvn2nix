@@ -33,19 +33,21 @@ In the same spirit of [bundix](https://github.com/nix-community/bundix), **mvn2n
 
 ```bash
 $ nix run -f https://github.com/fzakaria/mvn2nix/archive/master.tar.gz \
-        --command mvn2nix > dependencies.nix
+        --command mvn2nix > mvn2nix-lock.json
 
-$ head dependencies.nix
+$ head mvn2nix-lock.json
 {
-  "junit:junit:pom:3.8.1" = {
-    url = "https://repo.maven.apache.org/maven2/junit/junit/3.8.1/junit-3.8.1.pom";
-    layout = "junit/junit/3.8.1/junit-3.8.1.pom";
-    sha256 = "e68f33343d832398f3c8aa78afcd808d56b7c1020de4d3ad8ce47909095ee904";
-  };
-  "org.sonatype.forge:forge-parent:pom:10" = {
-    url = "https://repo.maven.apache.org/maven2/org/sonatype/forge/forge-parent/10/forge-parent-10.pom";
-    layout = "org/sonatype/forge/forge-parent/10/forge-parent-10.pom";
-    sha256 = "c14fb9c32b59cc03251f609416db7c0cff01f811edcccb4f6a865d6e7046bd0b";
+  "dependencies": {
+    "org.junit.jupiter:junit-jupiter:jar:5.6.2": {
+      "layout": "org/junit/jupiter/junit-jupiter/5.6.2/junit-jupiter-5.6.2.jar",
+      "sha256": "dfc0d870dec4c5428a126ddaaa987bdaf8026cc27270929c9f26d52f3030ac61",
+      "url": "https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.6.2/junit-jupiter-5.6.2.jar"
+    },
+    "org.codehaus.plexus:plexus-utils:pom:3.0.15": {
+      "layout": "org/codehaus/plexus/plexus-utils/3.0.15/plexus-utils-3.0.15.pom",
+      "sha256": "b4fe0bed469e2e973c661b4b7647db374afee7bda513560e96cd780132308f0b",
+      "url": "https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-utils/3.0.15/plexus-utils-3.0.15.pom"
+    },
 ```
 
 You can then use this to download all the necessary dependencies to run your application.
@@ -57,15 +59,15 @@ Now that you have a **nix** dependencies file; we can re-construct a Maven repos
 ```nix
 let mvn2nix = import (fetchTarball https://github.com/fzakaria/mvn2nix/archive/master.tar.gz) { };
 in
-mvn2nix.buildMavenRepsitory { dependencies = import ./dependencies.nix; }
+mvn2nix.buildMavenRepositoryFromLockFile ./mvn2nix-lock.json
 ```
 
 This creates a **/nix/store** path which is a Maven repository that can be used, such as in `mvn package --offline -Dmaven.repo.local=${mavenRepository}`
 
 ```bash
-$ tree /nix/store/2ps43297g5nii2k15kfy8z46fam51d8x-buildMavenRepository | head
+$ tree /nix/store/0ylsqi62jqz5gqf0dqrz5a3hj3jrzrwx-mvn2nix-repository | head
 
-/nix/store/2ps43297g5nii2k15kfy8z46fam51d8x-buildMavenRepository
+/nix/store/0ylsqi62jqz5gqf0dqrz5a3hj3jrzrwx-mvn2nix-repository
 ├── com
 │   └── google
 │       ├── code
@@ -85,8 +87,9 @@ let
   mvn2nix = import
     (fetchTarball "https://github.com/fzakaria/mvn2nix/archive/add-pom.tar.gz")
     { };
-  buildMavenRepository = mvn2nix.buildMavenRepository;
-  mavenRepository = buildMavenRepository { dependencies = import ./dependencies.nix; };
+  buildMavenRepositoryFromLockFile = mvn2nix.buildMavenRepositoryFromLockFile;
+  mavenRepository =
+    buildMavenRepositoryFromLockFile ./mvn2nix-lock.json;
 inherit (pkgs) lib stdenv jdk11_headless maven makeWrapper;
 inherit (stdenv) mkDerivation;
 in mkDerivation rec {
@@ -138,10 +141,10 @@ If you are running *mvn2nix* from this repository, you can do so with **nix-buil
 ```bash
 $ nix-build
 
-./result/bin/mvn2nix > example/dependencies.nix
+./result/bin/mvn2nix > example/mvn2nix-lock.json
 ```
 
 If you want to test **buildMavenRepository** you can run:
 ```bash
-$ nix-build -A buildMavenRepository --arg dependencies "import ./dependencies.nix"
+$ nix-build -A buildMavenRepositoryFromLockFile --arg "./mvn2nix-lock.json"
 ```

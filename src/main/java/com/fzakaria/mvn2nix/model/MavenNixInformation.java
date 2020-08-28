@@ -1,26 +1,42 @@
 package com.fzakaria.mvn2nix.model;
 
+import com.google.common.base.MoreObjects;
+
+import javax.annotation.concurrent.Immutable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
-public class MavenNixInformation implements Model {
+@Immutable
+public class MavenNixInformation {
 
-    public final Map<String, MavenArtifact> dependencies;
-
-    public MavenNixInformation() {
-        this.dependencies = new HashMap<>();
-    }
+    private final Map<String, MavenArtifact> dependencies;
 
     public MavenNixInformation(Map<String, MavenArtifact> dependencies) {
         this.dependencies = new HashMap<>(dependencies);
     }
 
-    public void addDependency(String name, MavenArtifact artifact) {
-        dependencies.put(name, artifact);
+    public Map<String, MavenArtifact> getDependencies() {
+        return new HashMap<>(dependencies);
     }
 
     @Override
-    public void accept(Visitor visitor) {
-        visitor.visit(this);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MavenNixInformation that = (MavenNixInformation) o;
+        return Objects.equals(dependencies, that.dependencies);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dependencies);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("dependencies", dependencies)
+                .toString();
     }
 }
