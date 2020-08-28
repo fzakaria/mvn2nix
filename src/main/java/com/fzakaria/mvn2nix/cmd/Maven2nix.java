@@ -9,10 +9,13 @@ import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
+import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
+import picocli.CommandLine.Spec;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +34,9 @@ import java.util.stream.Collectors;
 public class Maven2nix implements Callable<Integer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Maven2nix.class);
+
+    @Spec
+    CommandSpec spec;
 
     @Mixin
     LoggingMixin loggingMixin;
@@ -81,7 +87,7 @@ public class Maven2nix implements Callable<Integer> {
 
 
         final MavenNixInformation information = new MavenNixInformation(dependencies);
-        PrettyPrintNixVisitor visitor = new PrettyPrintNixVisitor(System.out);
+        PrettyPrintNixVisitor visitor = new PrettyPrintNixVisitor(spec.commandLine().getOut());
         information.accept(visitor);
 
         return 0;

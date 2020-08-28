@@ -1,8 +1,9 @@
 package com.fzakaria.mvn2nix.maven;
 
+import com.fzakaria.mvn2nix.util.Resources;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.io.Resources;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.io.IoBuilder;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.DefaultInvoker;
@@ -51,7 +52,7 @@ public class Maven {
 
         // send all of maven's output to log4j2 which goes to STDERR
         PrintStreamHandler handler = new PrintStreamHandler(
-                IoBuilder.forLogger("maven-invoker").setAutoFlush(true).buildPrintStream(),
+                IoBuilder.forLogger("maven-invoker").setLevel(Level.INFO).setAutoFlush(true).buildPrintStream(),
                 true
         );
 
@@ -97,15 +98,7 @@ public class Maven {
          * Load a custom settings.xml file that sets ~/.m2/repository as a remote repo.
          * This will cut down drastically on the network calls to re-hydrate this temporary local repo.
          */
-        try {
-            // we need to copy the resource file to somewhere on the filesystem
-            File tempResource = Files.createTempFile("mvn2nix-settings", "xml").toFile();
-            URL resource = Resources.getResource("settings.xml");
-            Resources.asByteSource(resource).copyTo(com.google.common.io.Files.asByteSink(tempResource));
-            request.setGlobalSettingsFile(tempResource);
-        } catch (IOException e) {
-            LOGGER.warn("Could not load custom settings.xml file.");
-        }
+        request.setGlobalSettingsFile(Resources.export("settings.xml"));
 
         InvocationResult result = this.invoker.execute(request);
         if (result.getExitCode() != 0) {
