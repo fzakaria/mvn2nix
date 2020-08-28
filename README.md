@@ -148,3 +148,12 @@ If you want to test **buildMavenRepository** you can run:
 ```bash
 $ nix-build -A buildMavenRepositoryFromLockFile --arg file "./mvn2nix-lock.json"
 ```
+
+At the moment, _mvn2nix_ is **self-bootstrapped** consuming it's own _mvn2nix-lock.json_.
+If for whatever reason, the JSON format changes or you need to update the dependencies, you can run _mvn2nix-bootstrap_.
+
+```bash
+$ nix-build -A mvn2nix-bootstrap
+
+./result/bin/mvn2nix > example/mvn2nix-lock.json
+```

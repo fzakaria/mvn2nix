@@ -1,7 +1,36 @@
-{ lib, stdenv, jdk, maven, makeWrapper, gitignoreSource
-, buildMavenRepositoryFromLockFile }:
+{ lib, writeText, stdenv, jdk, maven, makeWrapper, gitignoreSource
+, bootstrap ? false, buildMavenRepositoryFromLockFile }:
 let
-  repository = buildMavenRepositoryFromLockFile { file = ./mvn2nix-lock.json; };
+  repository = (if bootstrap then
+    stdenv.mkDerivation {
+      name = "bootstrap-repository";
+      buildInputs = [ jdk maven ];
+      src = gitignoreSource ./.;
+      buildPhase = ''
+        mkdir $out
+
+        while mvn package -Dmaven.repo.local=$out -Dmaven.wagon.rto=5000; [ $? = 1 ]; do
+          echo "timeout, restart maven to continue downloading"
+        done
+      '';
+      # keep only *.{pom,jar,sha1,nbm} and delete all ephemeral files with lastModified timestamps inside
+      installPhase = ''
+        find $out -type f \
+          -name \*.lastUpdated -or \
+          -name resolver-status.properties -or \
+          -name _remote.repositories \
+          -delete
+      '';
+
+      # don't do any fixup
+      dontFixup = true;
+
+      outputHashAlgo = "sha256";
+      outputHashMode = "recursive";
+      outputHash = "06dim5xccbhg3r0abpv5xrd2xnkc5qciwvfc9sxpbj0wxgjdj69b";
+    }
+  else
+    buildMavenRepositoryFromLockFile { file = ./mvn2nix-lock.json; });
 in stdenv.mkDerivation rec {
   pname = "mvn2nix";
   version = "0.1";
@@ -9,6 +38,7 @@ in stdenv.mkDerivation rec {
   src = gitignoreSource ./.;
   buildInputs = [ jdk maven makeWrapper ];
   buildPhase = ''
+    echo "Using repository ${repository}"
     # 'maven.repo.local' must be writable so copy it out of nix store
     mvn package --offline -Dmaven.repo.local=${repository}
   '';
