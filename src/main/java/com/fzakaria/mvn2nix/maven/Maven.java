@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -125,6 +126,8 @@ public class Maven {
                  .filter(f -> !f.toFile().getName().equals("_remote.repositories"))
                  .filter(f -> !f.toFile().getName().equals("resolver-status.properties"))
                  .filter(f -> !f.toFile().getName().endsWith("lastUpdated"))
+                 .filter(f -> !f.toFile().getName().endsWith("asc"))
+                 .filter(f -> !f.toFile().getName().endsWith("unpacked"))
                  .map(file -> {
                      Path layout = localRepository.toPath().relativize(file);
 
@@ -132,6 +135,15 @@ public class Maven {
                      String nameAndVersionAndClassifier = com.google.common.io.Files.getNameWithoutExtension(layout.toFile().getName());
                      String version = layout.getParent().toFile().getName();
                      String name = layout.getParent().getParent().toFile().getName();
+
+                     /*
+                      * This is an easy safeguard to make sure we only capture correct artifacts regardless
+                      * of the extension. The artifact must follow the pattern ${name}-${version} at the very least
+                      */
+                     if (!(nameAndVersionAndClassifier.contains(name) && nameAndVersionAndClassifier.contains(version))) {
+                         return null;
+                     }
+
                      String classifier = nameAndVersionAndClassifier
                              .replaceAll(name + "-" + version, "")
                              .replaceFirst("^-", "");
@@ -147,7 +159,9 @@ public class Maven {
                              .setVersion(version)
                              .setExtension(extension)
                              .build();
-                 }).collect(Collectors.toList());
+                 })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
