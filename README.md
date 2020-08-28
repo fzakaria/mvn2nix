@@ -17,6 +17,9 @@
 <!-- Added by: fmzakari, at: Mon Aug 24 21:40:20 PDT 2020 -->
 <!--te-->
 
+__:warning: mvn2nix is in active development but is ready to be used. Please pin it to a commit to avoid
+   any flux__
+
 ## How to use this
 
 ```bash
