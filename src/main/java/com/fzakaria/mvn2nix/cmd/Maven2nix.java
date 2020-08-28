@@ -4,12 +4,13 @@ import com.fzakaria.mvn2nix.maven.Artifact;
 import com.fzakaria.mvn2nix.maven.Maven;
 import com.fzakaria.mvn2nix.model.MavenArtifact;
 import com.fzakaria.mvn2nix.model.MavenNixInformation;
-import com.fzakaria.mvn2nix.model.PrettyPrintNixVisitor;
+import com.fzakaria.mvn2nix.model.URLAdapter;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
+import com.squareup.moshi.JsonAdapter;
+import com.squareup.moshi.Moshi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
@@ -87,10 +88,23 @@ public class Maven2nix implements Callable<Integer> {
 
 
         final MavenNixInformation information = new MavenNixInformation(dependencies);
-        PrettyPrintNixVisitor visitor = new PrettyPrintNixVisitor(spec.commandLine().getOut());
-        information.accept(visitor);
+        spec.commandLine().getOut().println(toPrettyJson(information));
 
         return 0;
+    }
+
+    /**
+     * Convert this object to a pretty JSON representation.
+     */
+    public static String toPrettyJson(MavenNixInformation information) {
+        final Moshi moshi = new Moshi.Builder()
+                .add(new URLAdapter())
+                .build();
+        JsonAdapter<MavenNixInformation> jsonAdapter = moshi
+                .adapter(MavenNixInformation.class)
+                .indent("  ")
+                .nonNull();
+        return jsonAdapter.toJson(information);
     }
 
     public static URL getRepositoryArtifactUrl(Artifact artifact, String repository) {
