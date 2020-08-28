@@ -26,6 +26,6 @@ jobs:
       with:
         name: fzakaria
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-    - run: nix-build
-    - run: ./result/bin/mvn2nix -A mvn2nix > mvn2nix-lock.json
+    - run: nix-build -A mvn2nix
+    - run: ./result/bin/mvn2nix > mvn2nix-lock.json
     - run: nix-build -A buildMavenRepositoryFromLockFile --arg file "./mvn2nix-lock.json"
