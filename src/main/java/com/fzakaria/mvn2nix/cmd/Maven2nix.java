@@ -75,6 +75,7 @@ public class Maven2nix implements Callable<Integer> {
                                 for (String repository : repositories) {
                                     URL url = getRepositoryArtifactUrl(artifact, repository);
                                     if (!doesUrlExist(url)) {
+                                        LOGGER.info("URL does not exist: {}", url);
                                         continue;
                                     }
 
