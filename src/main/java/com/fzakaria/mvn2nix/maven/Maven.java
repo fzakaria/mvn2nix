@@ -88,7 +88,6 @@ public class Maven {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		this.repositories.stream().forEach(url -> System.out.println(url.toString()));
     }
 
 
