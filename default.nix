@@ -7,7 +7,7 @@ let
         niv = (import sources.niv { }).niv;
         # include local sources in your Nix projects, while taking gitignore files into account
         # https://github.com/hercules-ci/gitignore.nix
-        gitignoreSource = (import sources.gitignore { }).gitignoreSource;
+        gitignoreSource = (import sources.gitignore { inherit (super) lib; }).gitignoreSource;
       })
       (import ./overlay.nix)
     ];
