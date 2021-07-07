@@ -1,11 +1,11 @@
-{ lib, writeText, stdenv, jdk, maven, makeWrapper, gitignoreSource
+{ lib, writeText, stdenv, jdk, maven, makeWrapper, nix-gitignore
 , bootstrap ? false, buildMavenRepositoryFromLockFile }:
 let
   repository = (if bootstrap then
     stdenv.mkDerivation {
       name = "bootstrap-repository";
       buildInputs = [ jdk maven ];
-      src = gitignoreSource ./.;
+      src = nix-gitignore.gitignoreSource [] ./.;
       buildPhase = ''
         mkdir $out
 
@@ -35,7 +35,7 @@ in stdenv.mkDerivation rec {
   pname = "mvn2nix";
   version = "0.1";
   name = "${pname}-${version}";
-  src = gitignoreSource ./.;
+  src = nix-gitignore.gitignoreSource [] ./.;
   buildInputs = [ jdk maven makeWrapper ];
   buildPhase = ''
     echo "Using repository ${repository}"
