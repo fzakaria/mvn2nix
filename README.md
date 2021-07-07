@@ -100,7 +100,7 @@ in mkDerivation rec {
   name = "${pname}-${version}";
   src = lib.cleanSource ./.;
 
-  buildInputs = [ jdk11_headless maven makeWrapper ];
+  nativeBuildInputs = [ jdk11_headless maven makeWrapper ];
   buildPhase = ''
     echo "Building with maven repository ${mavenRepository}"
     mvn package --offline -Dmaven.repo.local=${mavenRepository}
