@@ -63,7 +63,7 @@ in stdenv.mkDerivation rec {
           --set JAVA_HOME ${jdk}
   '';
 
-  meta = with stdenv.lib; {
+  meta = with lib; {
     description =
       "Easily package your Java applications for the Nix package manager.";
     homepage = "https://github.com/fzakaria/mvn2nix";
