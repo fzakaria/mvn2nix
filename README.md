@@ -23,7 +23,11 @@ I'd like to actively develop something more full featured, if you are interested
 ## How to use this
 
 ```bash
+# non-flake
 $ nix run -f https://github.com/fzakaria/mvn2nix/archive/master.tar.gz --command mvn2nix
+
+# flake
+$ nix run github:fzakaria/mvn2nix#mvn2nix
 ```
 
 If you have [cachix](https://cachix.org/) installed, you can leverage our prebuilt binary.
@@ -35,8 +39,12 @@ In the same spirit of [bundix](https://github.com/nix-community/bundix), **mvn2n
 *transitive closure* of all dependencies required by the application.
 
 ```bash
+# non-flake usage
 $ nix run -f https://github.com/fzakaria/mvn2nix/archive/master.tar.gz \
         --command mvn2nix > mvn2nix-lock.json
+
+# flake usage
+$ nix run github:fzakaria/mvn2nix#mvn2nix > mvn2nix-lock.json
 
 $ head mvn2nix-lock.json
 {
@@ -99,6 +107,82 @@ in mkDerivation rec {
   version = "0.01";
   name = "${pname}-${version}";
   src = lib.cleanSource ./.;
+
+  nativeBuildInputs = [ jdk11_headless maven makeWrapper ];
+  buildPhase = ''
+    echo "Building with maven repository ${mavenRepository}"
+    mvn package --offline -Dmaven.repo.local=${mavenRepository}
+  '';
+
+  installPhase = ''
+    # create the bin directory
+    mkdir -p $out/bin
+
+    # create a symbolic link for the lib directory
+    ln -s ${mavenRepository} $out/lib
+
+    # copy out the JAR
+    # Maven already setup the classpath to use m2 repository layout
+    # with the prefix of lib/
+    cp target/${name}.jar $out/
+
+    # create a wrapper that will automatically set the classpath
+    # this should be the paths from the dependency derivation
+    makeWrapper ${jdk11_headless}/bin/java $out/bin/${pname} \
+          --add-flags "-jar $out/${name}.jar"
+  '';
+}
+```
+
+### Example flake usage
+
+```nix
+# flake.nix
+{
+  inputs = {
+    mvn2nix.url = "github:fzakaria/mvn2nix";
+    utils.url = "github:numtide/flake-utils";
+  };
+
+  outputs = { nixpkgs, mvn2nix, utils, ... }:
+  let
+    pkgsForSystem = system: import nixpkgs {
+      # ./overlay.nix contains the logic to package local repository
+      overlays = [ mvn2nix.overlay (import ./overlay.nix) ];
+      inherit system;
+    };
+  in utils.lib.eachSystem utils.lib.defaultSystems (system: rec {
+    legacyPackages = pkgsForSystem system;
+    packages = utils.lib.flattenTree {
+      inherit (legacyPackages) myMavenProject;
+    };
+    defaultPackage = legacyPackages.myMavenProject;
+  });
+}
+```
+
+```nix
+# overlay.nix
+final: prev: {
+  myMavenProject = final.callPackage ./myPackage.nix { };
+}
+```
+
+```nix
+# myPackge.nix
+{ lib, stdenv, buildMavenRepositoryFromLockFile
+, makeWrapper, maven, jdk11_headless
+, nix-gitignore
+}:
+
+
+let
+  mavenRepository = buildMavenRepositoryFromLockFile { file = ./mvn2nix-lock.json; };
+in stdenv.mkDerivation rec {
+  pname = "myMavenProject";
+  version = "0.9.3";
+  name = "${pname}-${version}";
+  src = nix-gitignore.gitignoreSource [ "*.nix" ] ./.;
 
   nativeBuildInputs = [ jdk11_headless maven makeWrapper ];
   buildPhase = ''
