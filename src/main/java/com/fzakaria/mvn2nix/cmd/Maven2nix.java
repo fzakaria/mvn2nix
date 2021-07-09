@@ -57,6 +57,12 @@ public class Maven2nix implements Callable<Integer> {
             defaultValue = "https://repo.maven.apache.org/maven2/")
     private String[] repositories;
 
+    @Option(names = "--jdk",
+            arity = "0..*",
+            description = "The JDK to use when running Maven",
+            defaultValue = "${java.home}")
+    private File javaHome;
+    
     public Maven2nix() {
     }
 
@@ -65,7 +71,7 @@ public class Maven2nix implements Callable<Integer> {
         LOGGER.info("Reading {}", file);
 
         final Maven maven = Maven.withTemporaryLocalRepository();
-        maven.executeGoals(file, goals);
+        maven.executeGoals(file, javaHome, goals);
 
         Collection<Artifact> artifacts = maven.collectAllArtifactsInLocalRepository();
         Map<String, MavenArtifact> dependencies = artifacts.parallelStream()
