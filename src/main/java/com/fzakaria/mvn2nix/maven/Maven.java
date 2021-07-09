@@ -89,11 +89,12 @@ public class Maven {
         return Optional.of(file);
     }
 
-    public void executeGoals(File pom, String... goals) throws MavenInvocationException {
+    public void executeGoals(File pom, File javaHome, String... goals) throws MavenInvocationException {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setGoals(Lists.newArrayList(goals));
         request.setBatchMode(true);
         request.setPomFile(pom);
+        request.setJavaHome(javaHome);
 
         /*
          * Load a custom settings.xml file that sets ~/.m2/repository as a remote repo.
