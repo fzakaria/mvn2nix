@@ -1,5 +1,21 @@
 package com.fzakaria.mvn2nix.cmd;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.fzakaria.mvn2nix.maven.Artifact;
 import com.fzakaria.mvn2nix.maven.Maven;
 import com.fzakaria.mvn2nix.model.MavenArtifact;
@@ -9,26 +25,16 @@ import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
 import com.squareup.moshi.JsonAdapter;
 import com.squareup.moshi.Moshi;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Spec;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 
 @Command(name = "mvn2nix", mixinStandardHelpOptions = true, version = "mvn2nix 0.1",
         description = "Converts Maven dependencies into a Nix expression.")
@@ -53,9 +59,9 @@ public class Maven2nix implements Callable<Integer> {
 
     @Option(names = "--repositories",
             arity = "0..*",
-            description = "The maven repositories to try fetching artifacts from. Defaults to ${DEFAULT-VALUE}",
+            description = "The maven repositories to try fetching artifacts from. Defaults to ${DEFAULT-VALUE}. Repositories are also read directly from the pom.xml",
             defaultValue = "https://repo.maven.apache.org/maven2/")
-    private String[] repositories;
+    private String[] defaultRepositories;
 
     public Maven2nix() {
     }
@@ -66,13 +72,22 @@ public class Maven2nix implements Callable<Integer> {
 
         final Maven maven = Maven.withTemporaryLocalRepository();
         maven.executeGoals(file, goals);
+		List<URL> repositories = Stream.concat(
+				maven.repositories.stream(),
+				Arrays.stream(defaultRepositories).map(s -> {
+					try {
+						return new URL(s);
+					} catch (MalformedURLException e) {
+						throw new IllegalArgumentException(e);
+					}})
+			).collect(Collectors.toList());
 
         Collection<Artifact> artifacts = maven.collectAllArtifactsInLocalRepository();
         Map<String, MavenArtifact> dependencies = artifacts.parallelStream()
                 .collect(Collectors.toMap(
                             Artifact::getCanonicalName,
                             artifact -> {
-                                for (String repository : repositories) {
+                                for (URL repository : repositories) {
                                     URL url = getRepositoryArtifactUrl(artifact, repository);
                                     if (!doesUrlExist(url)) {
                                         LOGGER.info("URL does not exist: {}", url);
@@ -110,15 +125,12 @@ public class Maven2nix implements Callable<Integer> {
         return jsonAdapter.toJson(information);
     }
 
-    public static URL getRepositoryArtifactUrl(Artifact artifact, String repository) {
-        String url = repository;
-        if (!url.endsWith("/")) {
-            url += "/";
-        }
+    public static URL getRepositoryArtifactUrl(Artifact artifact, URL repository) {
         try {
-            return new URL(url + artifact.getLayout());
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Could not contact repository: " + url);
+			URI uri = repository.toURI().resolve(artifact.getLayout());
+            return uri.toURL();
+        } catch (Exception e) {
+            throw new RuntimeException("Could not resolve repository url: " + repository + "/" + artifact.getLayout());
         }
     }
 

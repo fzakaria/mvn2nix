@@ -4,3 +4,7 @@ target/
 result
 result-2
 .direnv/
+.project
+.classpath
+.settings
+.factorypath
