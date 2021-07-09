@@ -17,8 +17,8 @@
 <!-- Added by: fmzakari, at: Mon Aug 24 21:40:20 PDT 2020 -->
 <!--te-->
 
-__:warning: mvn2nix is in active development, while it works for the most part there are improvements that should be made. In the meantime, I've upstreamed a contribution to the [Nixpkgs documentation for maven](https://nixos.org/manual/nixpkgs/unstable/#maven). Please refer to that or [my blog](https://fzakaria.com/) for insights.
-I'd like to actively develop something more full featured, if you are interested please reach out.__
+__:warning: mvn2nix is in active development but is ready to be used. Please pin it to a commit to avoid
+any flux.__
 
 ## How to use this
 

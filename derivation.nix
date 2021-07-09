@@ -27,7 +27,7 @@ let
 
       outputHashAlgo = "sha256";
       outputHashMode = "recursive";
-      outputHash = "06dim5xccbhg3r0abpv5xrd2xnkc5qciwvfc9sxpbj0wxgjdj69b";
+      outputHash = "09jx8kpj0wsi7rshczfpkp77dpfhybdrfkazf1i3s48s3kckz32r";
     }
   else
     buildMavenRepositoryFromLockFile { file = ./mvn2nix-lock.json; });
