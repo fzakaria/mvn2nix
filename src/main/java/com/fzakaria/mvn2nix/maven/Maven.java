@@ -1,8 +1,35 @@
 package com.fzakaria.mvn2nix.maven;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathException;
+import javax.xml.xpath.XPathFactory;
+
 import com.fzakaria.mvn2nix.util.Resources;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.io.IoBuilder;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
@@ -14,19 +41,10 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.shared.invoker.PrintStreamHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * Small utility wrapper around maven-invoker.
@@ -38,6 +56,8 @@ public class Maven {
 
     private final Invoker invoker;
     private final File localRepository;
+	private final Document pom;
+	public final ImmutableList<URL> repositories;
 
     /**
      * Constructor.
@@ -59,7 +79,61 @@ public class Maven {
 
         this.invoker.setOutputHandler(handler);
         this.invoker.setErrorHandler(handler);
+
+		File pomFile = new File("./pom.xml");
+		try {
+			this.pom = parseXml(pomFile);
+			this.repositories = getRepositoriesFromPom(pom);
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
     }
+
+
+	/**
+	 * Parse an XML file
+	 * @param file
+	 * @return The parsed document
+	 * @throws ParserConfigurationException
+	 * @throws IOException
+	 * @throws SAXException
+	 */
+	public static Document parseXml(File file) throws ParserConfigurationException, IOException, SAXException {
+		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+		Document doc = dBuilder.parse(file);
+
+		doc.getDocumentElement().normalize();
+		return doc;
+	}
+
+	/**
+	* Read repositories from the pom XML Document
+	* @param doc
+	* @return An ImmutableList of the found URLs
+	* @throws XPathException
+	* @throws MalformedURLException
+	 */
+	public static ImmutableList<URL> getRepositoriesFromPom(Document doc) throws XPathException, MalformedURLException {
+
+		XPath xPath = XPathFactory.newInstance().newXPath();
+		String expression = "/project/repositories/repository";
+
+		NodeList repositories = (NodeList) xPath.compile(expression).evaluate(doc, XPathConstants.NODESET);
+		LOGGER.debug("Found {} repositories in pom.xml", repositories.getLength());
+		ArrayList<URL> repositoryUrls = new ArrayList<>(repositories.getLength());
+		
+		for (int i = 0; i < repositories.getLength(); i++) {
+			Node repoNode = repositories.item(i);
+			String urlString = (String) xPath.compile("url").evaluate(repoNode, XPathConstants.STRING);
+			LOGGER.debug("Found repository: {}", urlString);
+			URL url = new URL(urlString);
+			repositoryUrls.add(url);
+		}
+
+		return ImmutableList.copyOf(repositoryUrls);	
+	}
 
     /**
      * Create a {@link Maven} object with a temporary local repository.
