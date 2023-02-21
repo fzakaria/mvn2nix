@@ -78,18 +78,20 @@ public class Maven2nix implements Callable<Integer> {
                 .collect(Collectors.toMap(
                             Artifact::getCanonicalName,
                             artifact -> {
-                                for (String repository : repositories) {
-                                    URL url = getRepositoryArtifactUrl(artifact, repository);
-                                    if (!doesUrlExist(url)) {
-                                        LOGGER.info("URL does not exist: {}", url);
-                                        continue;
+                                for (int i = 0; i < 3; i++) {
+                                    for (String repository : repositories) {
+                                        URL url = getRepositoryArtifactUrl(artifact, repository);
+                                        if (!doesUrlExist(url)) {
+                                            LOGGER.info("URL does not exist: {}", url);
+                                            continue;
+                                        }
+
+                                        File localArtifact = maven.findArtifactInLocalRepository(artifact)
+                                                .orElseThrow(() -> new IllegalStateException("Should never happen"));
+
+                                        String sha256 = calculateSha256OfFile(localArtifact);
+                                        return new MavenArtifact(url, artifact.getLayout(), sha256);
                                     }
-
-                                    File localArtifact = maven.findArtifactInLocalRepository(artifact)
-                                            .orElseThrow(() -> new IllegalStateException("Should never happen"));
-
-                                    String sha256 = calculateSha256OfFile(localArtifact);
-                                    return new MavenArtifact(url, artifact.getLayout(), sha256);
                                 }
                                 throw new RuntimeException(String.format("Could not find artifact %s in any repository", artifact));
                             }
