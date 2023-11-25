@@ -6,6 +6,7 @@ import javax.annotation.concurrent.Immutable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 
 @Immutable
 public class MavenNixInformation {
@@ -13,9 +14,9 @@ public class MavenNixInformation {
     private final Map<String, MavenArtifact> dependencies;
 
     public MavenNixInformation(Map<String, MavenArtifact> dependencies) {
-        this.dependencies = new HashMap<>(dependencies);
+        this.dependencies = new TreeMap<>(dependencies);
     }
-    
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
