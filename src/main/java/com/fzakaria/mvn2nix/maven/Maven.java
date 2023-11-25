@@ -12,8 +12,6 @@ import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.shared.invoker.PrintStreamHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,8 +31,6 @@ import java.util.stream.StreamSupport;
  * https://maven.apache.org/shared/maven-invoker/index.html
  */
 public class Maven {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(Maven.class);
 
     private final Invoker invoker;
     private final File localRepository;
