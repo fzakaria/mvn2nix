@@ -15,11 +15,7 @@ public class MavenNixInformation {
     public MavenNixInformation(Map<String, MavenArtifact> dependencies) {
         this.dependencies = new HashMap<>(dependencies);
     }
-
-    public Map<String, MavenArtifact> getDependencies() {
-        return new HashMap<>(dependencies);
-    }
-
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
