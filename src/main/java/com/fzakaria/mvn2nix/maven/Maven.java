@@ -70,7 +70,7 @@ public class Maven {
         }
     }
 
-    public void executeGoals(File pom, File javaHome, String... goals) throws MavenInvocationException {
+    public void executeGoals(File pom, File javaHome, String... goals) {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setGoals(Lists.newArrayList(goals));
         request.setBatchMode(true);
@@ -82,13 +82,16 @@ public class Maven {
          * This will cut down drastically on the network calls to re-hydrate this temporary local repo.
          */
         request.setGlobalSettingsFile(Resources.export("settings.xml"));
-
-        InvocationResult result = this.invoker.execute(request);
-        if (result.getExitCode() != 0) {
-            throw new MavenInvocationException(
-                    String.format("Failed to execute goals [%s]. Exit code: %s", Arrays.toString(goals), result.getExitCode()),
-                    result.getExecutionException()
-            );
+        try {
+            InvocationResult result = this.invoker.execute(request);
+            if (result.getExitCode() != 0) {
+                throw new MavenInvocationException(
+                        String.format("Failed to execute goals [%s]. Exit code: %s", Arrays.toString(goals), result.getExitCode()),
+                        result.getExecutionException()
+                );
+            }
+        } catch (MavenInvocationException e) {
+            throw new RuntimeException(e);
         }
     }
 

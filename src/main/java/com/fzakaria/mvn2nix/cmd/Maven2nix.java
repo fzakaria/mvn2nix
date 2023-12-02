@@ -65,7 +65,7 @@ public class Maven2nix implements Callable<Integer> {
     }
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
         LOGGER.info("Reading {}", file);
 
         final Maven maven = Maven.withTemporaryLocalRepository();
