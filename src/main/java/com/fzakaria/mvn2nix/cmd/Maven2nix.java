@@ -104,6 +104,8 @@ public class Maven2nix implements Callable<Integer> {
 
     /**
      * Convert this object to a pretty JSON representation.
+     *
+     * The artifacts will appear in the order induced by {@link String#compareTo(String)}.
      */
     public static String toPrettyJson(MavenNixInformation information) {
         final Moshi moshi = new Moshi.Builder()

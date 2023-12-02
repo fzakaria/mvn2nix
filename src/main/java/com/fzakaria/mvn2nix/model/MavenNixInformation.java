@@ -13,6 +13,10 @@ public class MavenNixInformation {
 
     private final Map<String, MavenArtifact> dependencies;
 
+    /**
+     * Stores the given dependencies in a tree map to get the artifacts in alphabetic order when this
+     * object is converted to json by {@link com.fzakaria.mvn2nix.cmd.Maven2nix#toPrettyJson}.
+     */
     public MavenNixInformation(Map<String, MavenArtifact> dependencies) {
         this.dependencies = new TreeMap<>(dependencies);
     }
