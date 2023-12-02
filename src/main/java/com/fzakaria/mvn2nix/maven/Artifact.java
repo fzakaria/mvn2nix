@@ -22,24 +22,8 @@ public class Artifact {
         this.extension = extension;
     }
 
-    public String getGroup() {
-        return group;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public String getClassifier() {
-        return classifier;
-    }
-
-    public String getExtension() {
-        return extension;
     }
 
     @Override
