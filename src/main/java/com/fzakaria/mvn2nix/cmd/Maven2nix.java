@@ -75,24 +75,25 @@ public class Maven2nix implements Callable<Integer> {
         Map<String, MavenArtifact> dependencies = artifacts.parallelStream()
                 .collect(Collectors.toMap(
                             Artifact::getCanonicalName,
-                            artifact -> {
-                                for (String repository : repositories) {
-                                    URL url = getRepositoryArtifactUrl(artifact, repository);
-                                    if (!doesUrlExist(url)) {
-                                        LOGGER.info("URL does not exist: {}", url);
-                                        continue;
-                                    }
-                                    return new MavenArtifact(url, artifact.getLayout(), artifact.getSha256());
-                                }
-                                throw new RuntimeException(String.format("Could not find artifact %s in any repository", artifact));
-                            }
-                        ));
+                            artifact -> new MavenArtifact(artifactUrl(artifact), artifact.getLayout(), artifact.getSha256())));
 
 
         final MavenNixInformation information = new MavenNixInformation(dependencies);
         spec.commandLine().getOut().println(toPrettyJson(information));
 
         return 0;
+    }
+
+    private URL artifactUrl(Artifact artifact) {
+        for (String repository : repositories) {
+            URL url = getRepositoryArtifactUrl(artifact, repository);
+            if (!doesUrlExist(url)) {
+                LOGGER.info("URL does not exist: {}", url);
+                continue;
+            }
+            return url;
+        }
+        throw new RuntimeException(String.format("Could not find artifact %s in any repository", artifact));
     }
 
     /**
