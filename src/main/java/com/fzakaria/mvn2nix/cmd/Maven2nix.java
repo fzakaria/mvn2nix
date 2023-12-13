@@ -5,8 +5,6 @@ import com.fzakaria.mvn2nix.maven.Maven;
 import com.fzakaria.mvn2nix.model.MavenArtifact;
 import com.fzakaria.mvn2nix.model.MavenNixInformation;
 import com.fzakaria.mvn2nix.model.URLAdapter;
-import com.google.common.hash.Hashing;
-import com.google.common.io.Files;
 import com.squareup.moshi.JsonAdapter;
 import com.squareup.moshi.Moshi;
 import org.slf4j.Logger;
@@ -84,12 +82,7 @@ public class Maven2nix implements Callable<Integer> {
                                         LOGGER.info("URL does not exist: {}", url);
                                         continue;
                                     }
-
-                                    File localArtifact = maven.findArtifactInLocalRepository(artifact)
-                                            .orElseThrow(() -> new IllegalStateException("Should never happen"));
-
-                                    String sha256 = calculateSha256OfFile(localArtifact);
-                                    return new MavenArtifact(url, artifact.getLayout(), sha256);
+                                    return new MavenArtifact(url, artifact.getLayout(), artifact.getSha256());
                                 }
                                 throw new RuntimeException(String.format("Could not find artifact %s in any repository", artifact));
                             }
@@ -127,14 +120,6 @@ public class Maven2nix implements Callable<Integer> {
             return new URL(url + artifact.getLayout());
         } catch (MalformedURLException e) {
             throw new RuntimeException("Could not contact repository: " + url);
-        }
-    }
-
-    public static String calculateSha256OfFile(File file) {
-        try {
-            return Files.asByteSource(file).hash(Hashing.sha256()).toString();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
     }
 
