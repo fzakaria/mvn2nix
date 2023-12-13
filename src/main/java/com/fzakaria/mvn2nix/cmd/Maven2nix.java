@@ -61,7 +61,13 @@ public class Maven2nix implements Callable<Integer> {
             defaultValue = "${java.home}")
     private File javaHome;
     
+    private ArtifactResolver resolver;
+
     public Maven2nix() {
+        this.resolver = Maven2nix::doesUrlExist;
+    }
+    public Maven2nix(ArtifactResolver resolver) {
+        this.resolver = resolver;
     }
 
     @Override
@@ -87,13 +93,18 @@ public class Maven2nix implements Callable<Integer> {
     private URL artifactUrl(Artifact artifact) {
         for (String repository : repositories) {
             URL url = getRepositoryArtifactUrl(artifact, repository);
-            if (!doesUrlExist(url)) {
+            if (!resolver.doesExist(url)) {
                 LOGGER.info("URL does not exist: {}", url);
                 continue;
             }
             return url;
         }
         throw new RuntimeException(String.format("Could not find artifact %s in any repository", artifact));
+    }
+
+    @FunctionalInterface
+    public interface ArtifactResolver {
+        boolean doesExist(URL artifact);
     }
 
     /**
