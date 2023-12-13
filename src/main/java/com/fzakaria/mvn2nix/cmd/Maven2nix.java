@@ -63,21 +63,22 @@ public class Maven2nix implements Callable<Integer> {
     
     private ArtifactResolver resolver;
 
+    private ArtifactAnalysis analysis;
+
     public Maven2nix() {
         this.resolver = Maven2nix::doesUrlExist;
+        this.analysis = this::collectArtifactsFromTempLocalRepository;
     }
-    public Maven2nix(ArtifactResolver resolver) {
+
+    public Maven2nix(ArtifactResolver resolver, ArtifactAnalysis analysis) {
         this.resolver = resolver;
+        this.analysis = analysis;
     }
 
     @Override
     public Integer call() {
         LOGGER.info("Reading {}", file);
-
-        final Maven maven = Maven.withTemporaryLocalRepository();
-        maven.executeGoals(file, javaHome, goals);
-
-        Collection<Artifact> artifacts = maven.collectAllArtifactsInLocalRepository();
+        Collection<Artifact> artifacts = analysis.analyze();
         Map<String, MavenArtifact> dependencies = artifacts.parallelStream()
                 .collect(Collectors.toMap(
                             Artifact::getCanonicalName,
@@ -103,8 +104,23 @@ public class Maven2nix implements Callable<Integer> {
     }
 
     @FunctionalInterface
+    interface ArtifactAnalysis {
+        /**
+         * @return The artifacts needed to run the goals on the given pom.
+         */
+        Collection<Artifact> analyze();
+    }
+
+    @FunctionalInterface
     public interface ArtifactResolver {
         boolean doesExist(URL artifact);
+    }
+
+
+    private Collection<Artifact> collectArtifactsFromTempLocalRepository() {
+        final Maven maven = Maven.withTemporaryLocalRepository();
+        maven.executeGoals(file, javaHome, goals);
+        return maven.collectAllArtifactsInLocalRepository();
     }
 
     /**
