@@ -10,6 +10,9 @@ import java.util.TreeMap;
 @Immutable
 public class MavenNixInformation {
 
+    /**
+     * Maps canonical names to the artifact data.
+     */
     private final Map<String, MavenArtifact> dependencies;
 
     /**
@@ -18,6 +21,10 @@ public class MavenNixInformation {
      */
     public MavenNixInformation(Map<String, MavenArtifact> dependencies) {
         this.dependencies = new TreeMap<>(dependencies);
+    }
+
+    public MavenArtifact byCanonicalName(String canonicalName) {
+        return dependencies.get(canonicalName);
     }
 
     @Override
