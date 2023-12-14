@@ -78,20 +78,24 @@ public class Maven2nix implements Callable<Integer> {
     @Override
     public Integer call() {
         LOGGER.info("Reading {}", file);
-        Collection<Artifact> artifacts = analysis.analyze();
-        Map<String, MavenArtifact> dependencies = artifacts.parallelStream()
-                .collect(Collectors.toMap(
-                            Artifact::getCanonicalName,
-                            artifact -> new MavenArtifact(artifactUrl(artifact), artifact.getLayout(), artifact.getSha256())));
-
-
-        final MavenNixInformation information = new MavenNixInformation(dependencies);
-        spec.commandLine().getOut().println(toPrettyJson(information));
-
+        spec.commandLine().getOut().println(toPrettyJson(mavenNixInformation(resolver, analysis, repositories)));
         return 0;
     }
 
-    private URL artifactUrl(Artifact artifact) {
+    static MavenNixInformation mavenNixInformation(
+            ArtifactResolver resolver,
+            ArtifactAnalysis analysis,
+            String[] repositories
+    ) {
+        Collection<Artifact> artifacts = analysis.analyze();
+        Map<String, MavenArtifact> dependencies = artifacts.parallelStream()
+                .collect(Collectors.toMap(
+                        Artifact::getCanonicalName,
+                        artifact -> new MavenArtifact(artifactUrl(resolver, repositories, artifact), artifact.getLayout(), artifact.getSha256())));
+        return new MavenNixInformation(dependencies);
+    }
+
+    private static URL artifactUrl(ArtifactResolver resolver, String[] repositories, Artifact artifact) {
         for (String repository : repositories) {
             URL url = getRepositoryArtifactUrl(artifact, repository);
             if (!resolver.doesExist(url)) {
