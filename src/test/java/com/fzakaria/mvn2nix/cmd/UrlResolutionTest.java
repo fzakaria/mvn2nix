@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URL;
 import java.util.Collection;
+import java.util.Optional;
 
 import static com.fzakaria.mvn2nix.cmd.Maven2nix.mavenNixInformation;
 import static com.fzakaria.mvn2nix.cmd.Maven2nix.toPrettyJson;
@@ -39,8 +40,14 @@ public class UrlResolutionTest {
                 "}");
     }
 
-    private static boolean fakeArtifactResolver(URL artifact) {
-        return !"https://repo-1/group-a/name-a/version-a/name-a-version-a-classifier-a.jar".equals(artifact.toString());
+    private static Optional<String> fakeArtifactResolver(URL artifact) {
+        switch (artifact.toString()) {
+            case "https://repo-2/group-a/name-a/version-a/name-a-version-a-classifier-a.jar":
+                return Optional.of("sha-a");
+            case "https://repo-1/group-b/name-b/version-b/name-b-version-b-classifier-b.jar":
+                return Optional.of("sha-b");
+        }
+        return Optional.empty();
     }
 
     private static Collection<Artifact> fakeArtifactAnalysis() {

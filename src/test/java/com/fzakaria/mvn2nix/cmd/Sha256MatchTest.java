@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Optional;
 
 import static com.fzakaria.mvn2nix.cmd.Maven2nix.mavenNixInformation;
 import static com.fzakaria.mvn2nix.cmd.Maven2nix.toPrettyJson;
@@ -28,27 +29,22 @@ class Sha256MatchTest {
 
     private static Artifact artifactA = new Artifact("group-a", "name-a", "version-a", "classifier-a", "jar", "sha-a-in-repo-2");
 
-    @Disabled("Hashes do not match")
     @Test
     public void artifactUrlsWithMultipleRepositories() {
         var repositories = new String[]{"https://repo-1/", "https://repo-2"};
-        var artifactInfo = mavenNixInformation(Sha256MatchTest::fakeArtifactResolver, Sha256MatchTest::fakeArtifactAnalysis, repositories)
+        var artifactInfo = mavenNixInformation(Sha256MatchTest::sha256, Sha256MatchTest::fakeArtifactAnalysis, repositories)
                 .byCanonicalName(artifactA.getCanonicalName());
-        assertEquals(artifactInfo.getSha256(), sha256(artifactInfo.getUrl()));
+        assertEquals(artifactInfo.getSha256(), sha256(artifactInfo.getUrl()).get());
     }
 
-    private static String sha256(URL url) {
+    private static Optional<String> sha256(URL url) {
         switch (url.toString()) {
             case "https://repo-1/group-a/name-a/version-a/name-a-version-a-classifier-a.jar":
-                return "sha-a-in-repo-1";
+                return Optional.of("sha-a-in-repo-1");
             case "https://repo-2/group-a/name-a/version-a/name-a-version-a-classifier-a.jar":
-                return "sha-a-in-repo-2";
-            default: throw new IllegalStateException("All cases covered!");
+                return Optional.of("sha-a-in-repo-2");
         }
-    }
-
-    private static boolean fakeArtifactResolver(URL artifact) {
-        return true;
+        return Optional.empty();
     }
 
     private static Collection<Artifact> fakeArtifactAnalysis() {

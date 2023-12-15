@@ -5,6 +5,9 @@ import com.fzakaria.mvn2nix.maven.Maven;
 import com.fzakaria.mvn2nix.model.MavenArtifact;
 import com.fzakaria.mvn2nix.model.MavenNixInformation;
 import com.fzakaria.mvn2nix.model.URLAdapter;
+import com.google.common.hash.Hashing;
+import com.google.common.hash.HashingInputStream;
+import com.google.common.io.ByteStreams;
 import com.squareup.moshi.JsonAdapter;
 import com.squareup.moshi.Moshi;
 import org.slf4j.Logger;
@@ -23,8 +26,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
@@ -66,7 +71,7 @@ public class Maven2nix implements Callable<Integer> {
     private ArtifactAnalysis analysis;
 
     public Maven2nix() {
-        this.resolver = Maven2nix::doesUrlExist;
+        this.resolver = Maven2nix::sha256OfUrl;
         this.analysis = this::collectArtifactsFromTempLocalRepository;
     }
 
@@ -96,15 +101,11 @@ public class Maven2nix implements Callable<Integer> {
     }
 
     private static URL artifactUrl(ArtifactResolver resolver, String[] repositories, Artifact artifact) {
-        for (String repository : repositories) {
-            URL url = getRepositoryArtifactUrl(artifact, repository);
-            if (!resolver.doesExist(url)) {
-                LOGGER.info("URL does not exist: {}", url);
-                continue;
-            }
-            return url;
-        }
-        throw new RuntimeException(String.format("Could not find artifact %s in any repository", artifact));
+        return Arrays.stream(repositories)
+                .map(r -> getRepositoryArtifactUrl(artifact, r))
+                .filter(u -> resolver.sha256(u).map(artifact.getSha256()::equals).orElse(false))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException(String.format("Could not find artifact %s in any repository", artifact)));
     }
 
     @FunctionalInterface
@@ -117,7 +118,11 @@ public class Maven2nix implements Callable<Integer> {
 
     @FunctionalInterface
     public interface ArtifactResolver {
-        boolean doesExist(URL artifact);
+        /**
+         * @return The sha256 of the file referred to by the given URL or
+         * {@link Optional#empty()} if the URL does not exist.
+         */
+        Optional<String> sha256(URL artifact);
     }
 
 
@@ -155,32 +160,28 @@ public class Maven2nix implements Callable<Integer> {
         }
     }
 
-    /**
-     * Check whether a given URL
-     *
-     * @param url The URL for the pom file.
-     * @return
-     */
-    public static boolean doesUrlExist(URL url) {
+    public static Optional<String> sha256OfUrl(URL url) {
         try {
             URLConnection urlConnection = url.openConnection();
             if (!(urlConnection instanceof HttpURLConnection)) {
-                return false;
+                throw new RuntimeException("The url is not of type http provided.");
             }
 
             HttpURLConnection connection = (HttpURLConnection) urlConnection;
-            connection.setRequestMethod("HEAD");
+            connection.setRequestMethod("GET");
             connection.setInstanceFollowRedirects(true);
             connection.connect();
 
             int code = connection.getResponseCode();
-            if (code == 200) {
-                return true;
+            if (code >= 400) {
+                throw new RuntimeException("Fetching the url failed with status code: " + code);
             }
+            var inputStream = new HashingInputStream(Hashing.sha256(), connection.getInputStream());
+            ByteStreams.exhaust(inputStream);
+            return Optional.of(inputStream.hash().toString());
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            return Optional.empty();
         }
-        return false;
     }
 
 }
