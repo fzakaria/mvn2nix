@@ -3,6 +3,7 @@ package com.fzakaria.mvn2nix.maven;
 import com.fzakaria.mvn2nix.util.Resources;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.hash.Hashing;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.io.IoBuilder;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
@@ -21,7 +22,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -70,21 +70,7 @@ public class Maven {
         }
     }
 
-    /**
-     * Return the local File for the provided artifact if it exists.
-     * The ephemeral local repository is checked only.
-     * @param artifact
-     * @return
-     */
-    public Optional<File> findArtifactInLocalRepository(Artifact artifact) {
-        File file = localRepository.toPath().resolve(artifact.getLayout()).toFile();
-        if (!file.exists()) {
-            return Optional.empty();
-        }
-        return Optional.of(file);
-    }
-
-    public void executeGoals(File pom, File javaHome, String... goals) throws MavenInvocationException {
+    public void executeGoals(File pom, File javaHome, String... goals) {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setGoals(Lists.newArrayList(goals));
         request.setBatchMode(true);
@@ -96,13 +82,16 @@ public class Maven {
          * This will cut down drastically on the network calls to re-hydrate this temporary local repo.
          */
         request.setGlobalSettingsFile(Resources.export("settings.xml"));
-
-        InvocationResult result = this.invoker.execute(request);
-        if (result.getExitCode() != 0) {
-            throw new MavenInvocationException(
-                    String.format("Failed to execute goals [%s]. Exit code: %s", Arrays.toString(goals), result.getExitCode()),
-                    result.getExecutionException()
-            );
+        try {
+            InvocationResult result = this.invoker.execute(request);
+            if (result.getExitCode() != 0) {
+                throw new MavenInvocationException(
+                        String.format("Failed to execute goals [%s]. Exit code: %s", Arrays.toString(goals), result.getExitCode()),
+                        result.getExecutionException()
+                );
+            }
+        } catch (MavenInvocationException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -154,6 +143,7 @@ public class Maven {
                              .setClassifier(classifier)
                              .setVersion(version)
                              .setExtension(extension)
+                             .setSha256(calculateSha256OfFile(file.toFile()))
                              .build();
                  })
                 .filter(Objects::nonNull)
@@ -163,4 +153,11 @@ public class Maven {
         }
     }
 
+    private static String calculateSha256OfFile(File file) {
+        try {
+            return com.google.common.io.Files.asByteSource(file).hash(Hashing.sha256()).toString();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 }

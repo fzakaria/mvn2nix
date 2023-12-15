@@ -6,7 +6,8 @@ import com.fzakaria.mvn2nix.model.MavenArtifact;
 import com.fzakaria.mvn2nix.model.MavenNixInformation;
 import com.fzakaria.mvn2nix.model.URLAdapter;
 import com.google.common.hash.Hashing;
-import com.google.common.io.Files;
+import com.google.common.hash.HashingInputStream;
+import com.google.common.io.ByteStreams;
 import com.squareup.moshi.JsonAdapter;
 import com.squareup.moshi.Moshi;
 import org.slf4j.Logger;
@@ -25,8 +26,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
@@ -63,43 +66,70 @@ public class Maven2nix implements Callable<Integer> {
             defaultValue = "${java.home}")
     private File javaHome;
     
+    private ArtifactResolver resolver;
+
+    private ArtifactAnalysis analysis;
+
     public Maven2nix() {
+        this.resolver = Maven2nix::sha256OfUrl;
+        this.analysis = this::collectArtifactsFromTempLocalRepository;
+    }
+
+    public Maven2nix(ArtifactResolver resolver, ArtifactAnalysis analysis) {
+        this.resolver = resolver;
+        this.analysis = analysis;
     }
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
         LOGGER.info("Reading {}", file);
+        spec.commandLine().getOut().println(toPrettyJson(mavenNixInformation(resolver, analysis, repositories)));
+        return 0;
+    }
 
-        final Maven maven = Maven.withTemporaryLocalRepository();
-        maven.executeGoals(file, javaHome, goals);
-
-        Collection<Artifact> artifacts = maven.collectAllArtifactsInLocalRepository();
+    static MavenNixInformation mavenNixInformation(
+            ArtifactResolver resolver,
+            ArtifactAnalysis analysis,
+            String[] repositories
+    ) {
+        Collection<Artifact> artifacts = analysis.analyze();
         Map<String, MavenArtifact> dependencies = artifacts.parallelStream()
                 .collect(Collectors.toMap(
-                            Artifact::getCanonicalName,
-                            artifact -> {
-                                for (String repository : repositories) {
-                                    URL url = getRepositoryArtifactUrl(artifact, repository);
-                                    if (!doesUrlExist(url)) {
-                                        LOGGER.info("URL does not exist: {}", url);
-                                        continue;
-                                    }
+                        Artifact::getCanonicalName,
+                        artifact -> new MavenArtifact(artifactUrl(resolver, repositories, artifact), artifact.getLayout(), artifact.getSha256())));
+        return new MavenNixInformation(dependencies);
+    }
 
-                                    File localArtifact = maven.findArtifactInLocalRepository(artifact)
-                                            .orElseThrow(() -> new IllegalStateException("Should never happen"));
+    private static URL artifactUrl(ArtifactResolver resolver, String[] repositories, Artifact artifact) {
+        return Arrays.stream(repositories)
+                .map(r -> getRepositoryArtifactUrl(artifact, r))
+                .filter(u -> resolver.sha256(u).map(artifact.getSha256()::equals).orElse(false))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException(String.format("Could not find artifact %s in any repository", artifact)));
+    }
 
-                                    String sha256 = calculateSha256OfFile(localArtifact);
-                                    return new MavenArtifact(url, artifact.getLayout(), sha256);
-                                }
-                                throw new RuntimeException(String.format("Could not find artifact %s in any repository", artifact));
-                            }
-                        ));
+    @FunctionalInterface
+    interface ArtifactAnalysis {
+        /**
+         * @return The artifacts needed to run the goals on the given pom.
+         */
+        Collection<Artifact> analyze();
+    }
+
+    @FunctionalInterface
+    public interface ArtifactResolver {
+        /**
+         * @return The sha256 of the file referred to by the given URL or
+         * {@link Optional#empty()} if the URL does not exist.
+         */
+        Optional<String> sha256(URL artifact);
+    }
 
 
-        final MavenNixInformation information = new MavenNixInformation(dependencies);
-        spec.commandLine().getOut().println(toPrettyJson(information));
-
-        return 0;
+    private Collection<Artifact> collectArtifactsFromTempLocalRepository() {
+        final Maven maven = Maven.withTemporaryLocalRepository();
+        maven.executeGoals(file, javaHome, goals);
+        return maven.collectAllArtifactsInLocalRepository();
     }
 
     /**
@@ -130,40 +160,28 @@ public class Maven2nix implements Callable<Integer> {
         }
     }
 
-    public static String calculateSha256OfFile(File file) {
-        try {
-            return Files.asByteSource(file).hash(Hashing.sha256()).toString();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    /**
-     * Check whether a given URL
-     *
-     * @param url The URL for the pom file.
-     * @return
-     */
-    public static boolean doesUrlExist(URL url) {
+    public static Optional<String> sha256OfUrl(URL url) {
         try {
             URLConnection urlConnection = url.openConnection();
             if (!(urlConnection instanceof HttpURLConnection)) {
-                return false;
+                throw new RuntimeException("The url is not of type http provided.");
             }
 
             HttpURLConnection connection = (HttpURLConnection) urlConnection;
-            connection.setRequestMethod("HEAD");
+            connection.setRequestMethod("GET");
             connection.setInstanceFollowRedirects(true);
             connection.connect();
 
             int code = connection.getResponseCode();
-            if (code == 200) {
-                return true;
+            if (code >= 400) {
+                throw new RuntimeException("Fetching the url failed with status code: " + code);
             }
+            var inputStream = new HashingInputStream(Hashing.sha256(), connection.getInputStream());
+            ByteStreams.exhaust(inputStream);
+            return Optional.of(inputStream.hash().toString());
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            return Optional.empty();
         }
-        return false;
     }
 
 }
