@@ -3,7 +3,6 @@ package com.fzakaria.mvn2nix.model;
 import com.google.common.base.MoreObjects;
 
 import javax.annotation.concurrent.Immutable;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
