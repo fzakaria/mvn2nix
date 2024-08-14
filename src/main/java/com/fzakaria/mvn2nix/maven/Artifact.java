@@ -14,32 +14,23 @@ public class Artifact {
     private final String classifier;
     private final String extension;
 
-    public Artifact(String group, String name, String version, String classifier, String extension) {
+    private final String sha256;
+
+    public Artifact(String group, String name, String version, String classifier, String extension, String sha256) {
         this.group = group;
         this.name = name;
         this.version = version;
         this.classifier = classifier;
         this.extension = extension;
-    }
-
-    public String getGroup() {
-        return group;
+        this.sha256 = sha256;
     }
 
     public String getName() {
         return name;
     }
 
-    public String getVersion() {
-        return version;
-    }
-
-    public String getClassifier() {
-        return classifier;
-    }
-
-    public String getExtension() {
-        return extension;
+    public String getSha256() {
+        return sha256;
     }
 
     @Override
@@ -51,7 +42,8 @@ public class Artifact {
                 Objects.equals(name, artifact.name) &&
                 Objects.equals(version, artifact.version) &&
                 Objects.equals(classifier, artifact.classifier) &&
-                Objects.equals(extension, artifact.extension);
+                Objects.equals(extension, artifact.extension) &&
+                Objects.equals(sha256, artifact.sha256);
     }
 
     /**
@@ -87,7 +79,7 @@ public class Artifact {
 
     @Override
     public int hashCode() {
-        return Objects.hash(group, name, version, classifier, extension);
+        return Objects.hash(group, name, version, classifier, extension, sha256);
     }
 
     @Override
@@ -139,6 +131,8 @@ public class Artifact {
         private String classifier;
         private String extension;
 
+        private String sha256;
+
         public Builder setGroup(String group) {
             this.group = group;
             return this;
@@ -164,8 +158,13 @@ public class Artifact {
             return this;
         }
 
+        public Builder setSha256(String sha256) {
+            this.sha256 = sha256;
+            return this;
+        }
+
         public Artifact build() {
-            return new Artifact(group, name, version, classifier, extension);
+            return new Artifact(group, name, version, classifier, extension, sha256);
         }
     }
 }

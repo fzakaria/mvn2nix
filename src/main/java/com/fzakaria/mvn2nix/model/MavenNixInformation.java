@@ -3,7 +3,6 @@ package com.fzakaria.mvn2nix.model;
 import com.google.common.base.MoreObjects;
 
 import javax.annotation.concurrent.Immutable;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -11,6 +10,9 @@ import java.util.TreeMap;
 @Immutable
 public class MavenNixInformation {
 
+    /**
+     * Maps canonical names to the artifact data.
+     */
     private final Map<String, MavenArtifact> dependencies;
 
     /**
@@ -19,6 +21,10 @@ public class MavenNixInformation {
      */
     public MavenNixInformation(Map<String, MavenArtifact> dependencies) {
         this.dependencies = new TreeMap<>(dependencies);
+    }
+
+    public MavenArtifact byCanonicalName(String canonicalName) {
+        return dependencies.get(canonicalName);
     }
 
     @Override
