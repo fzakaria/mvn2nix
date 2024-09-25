@@ -70,7 +70,7 @@ You can then use this to download all the necessary dependencies to run your app
 Now that you have a **nix** dependencies file; we can re-construct a Maven repository using Nix!
 
 ```nix
-let mvn2nix = import (fetchTarball https://github.com/fzakaria/mvn2nix/archive/master.tar.gz) { };
+let mvn2nix = import (fetchTarball "https://github.com/fzakaria/mvn2nix/archive/master.tar.gz") { };
 in
 mvn2nix.buildMavenRepositoryFromLockFile { file = ./mvn2nix-lock.json; }
 ```
