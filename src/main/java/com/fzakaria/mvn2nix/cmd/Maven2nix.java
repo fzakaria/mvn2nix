@@ -62,7 +62,13 @@ public class Maven2nix implements Callable<Integer> {
             description = "The JDK to use when running Maven",
             defaultValue = "${java.home}")
     private File javaHome;
-    
+
+    @Option(names = "--local",
+            arity = "0..1",
+            description = "The location to store downloaded files at. Setting this to the same directory between runs allows for reuse of downloaded packages. Defaults to a temporary directory.")
+    private File localRepository = null;
+
+
     public Maven2nix() {
     }
 
@@ -70,7 +76,12 @@ public class Maven2nix implements Callable<Integer> {
     public Integer call() throws Exception {
         LOGGER.info("Reading {}", file);
 
-        final Maven maven = Maven.withTemporaryLocalRepository();
+        final Maven maven;
+        if (localRepository != null) {
+            maven = new Maven(localRepository);
+        } else {
+            maven = Maven.withTemporaryLocalRepository();
+        }
         maven.executeGoals(file, javaHome, goals);
 
         Collection<Artifact> artifacts = maven.collectAllArtifactsInLocalRepository();
